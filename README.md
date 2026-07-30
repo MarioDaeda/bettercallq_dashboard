@@ -17,10 +17,15 @@ Le fondamenta del prototipo sono complete:
 - sette sezioni navigabili;
 - Panoramica completa con KPI, canali, coda, grafico, attività ed errori;
 - filtri temporali collegati al service mock;
+- coda “Da gestire” con filtri, dettaglio, azioni simulate, risoluzione e
+  riapertura;
+- conteggi e urgenze sincronizzati tra coda, navigazione e Panoramica durante la
+  sessione demo;
 - loading, empty ed error state condivisi.
 
-Le altre pagine operative restano intenzionalmente minimali e verranno
-completate una alla volta nelle task successive.
+Le pagine Chiamate, WhatsApp, Impostazioni IA, QR e canali e Monitoraggio
+restano intenzionalmente minimali e verranno completate una alla volta nelle
+task successive.
 
 ## Stack
 
@@ -64,12 +69,14 @@ src/
 ├── app/                  # route, layout e stati Next.js
 ├── components/
 │   ├── app-shell/        # sidebar, drawer, header e tema
+│   ├── interventions/    # coda, filtri, dettaglio e azioni simulate
 │   ├── overview/         # widget tipizzati della Panoramica
 │   ├── shared/           # intestazioni e stati condivisi
 │   └── ui/               # primitive UI
 └── lib/
     ├── domain/           # schemi Zod e tipi TypeScript
     ├── fixtures/         # soli dati dimostrativi
+    ├── interventions/    # etichette e formattazione della coda
     ├── overview/         # filtri e formattazione della Panoramica
     └── services/         # contratto e implementazione mock
 ```

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 
 import { AppShell } from "@/components/app-shell/app-shell";
 import { ThemeBootScript } from "@/components/app-shell/theme-boot-script";
+import { InterventionSessionProvider } from "@/components/interventions/intervention-session-context";
 import {
   dashboardService,
   PILOT_SALON_ID,
@@ -53,13 +54,15 @@ export default async function RootLayout({
         >
           Vai al contenuto
         </a>
-        <AppShell
-          attentionCount={interventions.length}
-          channels={channels}
-          salon={salon}
-        >
-          {children}
-        </AppShell>
+        <InterventionSessionProvider initialInterventions={interventions}>
+          <AppShell
+            attentionCount={interventions.length}
+            channels={channels}
+            salon={salon}
+          >
+            {children}
+          </AppShell>
+        </InterventionSessionProvider>
       </body>
     </html>
   );

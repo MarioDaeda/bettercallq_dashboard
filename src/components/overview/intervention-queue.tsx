@@ -1,8 +1,11 @@
+"use client";
+
 import { ArrowRight, CheckCircle2, Clock3, Siren } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useActiveInterventions } from "@/components/interventions/intervention-session-context";
 import {
   Card,
   CardContent,
@@ -22,15 +25,19 @@ export function InterventionQueue({
   interventions,
   timeZone,
 }: InterventionQueueProps) {
+  const currentInterventions = useActiveInterventions(interventions).filter(
+    (intervention) => intervention.priority === "urgent",
+  );
+
   return (
     <Card className="h-full overflow-hidden">
       <CardHeader className="flex-row items-start justify-between gap-4 border-b bg-muted/15">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle>Coda urgente</CardTitle>
-            {interventions.length > 0 ? (
+            {currentInterventions.length > 0 ? (
               <Badge variant="destructive">
-                {interventions.length} da vedere
+                {currentInterventions.length} da vedere
               </Badge>
             ) : null}
           </div>
@@ -46,7 +53,7 @@ export function InterventionQueue({
         </Button>
       </CardHeader>
       <CardContent className="pt-5 sm:pt-6">
-        {interventions.length === 0 ? (
+        {currentInterventions.length === 0 ? (
           <div className="flex min-h-36 items-center gap-4 rounded-2xl border border-success/20 bg-success/[0.055] p-5">
             <div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-success/12 text-success">
               <CheckCircle2 aria-hidden="true" className="size-5" />
@@ -60,7 +67,7 @@ export function InterventionQueue({
           </div>
         ) : (
           <ul className="space-y-3">
-            {interventions.map((intervention) => (
+            {currentInterventions.map((intervention) => (
               <li key={intervention.id}>
                 <Link
                   className="group flex gap-3 rounded-2xl border border-destructive/18 bg-destructive/[0.045] p-4 transition-colors hover:bg-destructive/[0.075] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"

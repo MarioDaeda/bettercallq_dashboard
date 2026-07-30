@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 import {
   Card,
@@ -13,7 +14,7 @@ export interface KpiCardProps {
   icon: LucideIcon;
   label: string;
   tone: "primary" | "success" | "warning" | "info";
-  value: string;
+  value: ReactNode;
 }
 
 const toneStyles: Record<KpiCardProps["tone"], string> = {

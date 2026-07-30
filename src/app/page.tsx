@@ -10,6 +10,7 @@ import {
   DashboardWidgetRenderer,
   type DashboardWidget,
 } from "@/components/overview/dashboard-widget-renderer";
+import { InterventionAttentionValue } from "@/components/interventions/intervention-session-context";
 import { PeriodFilter } from "@/components/overview/period-filter";
 import { PageHeader } from "@/components/shared/page-header";
 import {
@@ -87,7 +88,9 @@ export default async function OverviewPage({
         icon: CircleAlert,
         label: "Da gestire",
         tone: overview.openInterventions > 0 ? "warning" : "success",
-        value: formatInteger(overview.openInterventions),
+        value: (
+          <InterventionAttentionValue fallback={overview.openInterventions} />
+        ),
       },
     },
     {
