@@ -1,17 +1,26 @@
 import type { Metadata } from "next";
 
-import { SectionPlaceholder } from "@/components/shared/section-placeholder";
+import { WhatsAppPageClient } from "@/components/whatsapp/whatsapp-page-client";
 
 export const metadata: Metadata = {
   title: "WhatsApp",
 };
 
-export default function WhatsAppPage() {
+interface WhatsAppPageProps {
+  searchParams: Promise<{
+    conversation?: string | string[];
+  }>;
+}
+
+export default async function WhatsAppPage({
+  searchParams,
+}: WhatsAppPageProps) {
+  const query = await searchParams;
+  const initialConversationId = Array.isArray(query.conversation)
+    ? query.conversation[0]
+    : query.conversation;
+
   return (
-    <SectionPlaceholder
-      description="Consulta le conversazioni dimostrative e, quando serve, passa con chiarezza dal controllo dell’IA a quello del salone."
-      nextTask="La Task 6C"
-      title="Conversazioni chiare, controllo sempre visibile."
-    />
+    <WhatsAppPageClient initialConversationId={initialConversationId} />
   );
 }

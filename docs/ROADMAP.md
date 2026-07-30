@@ -173,6 +173,8 @@ Uscita:
 
 ### Task 6C — WhatsApp
 
+**Stato:** completata
+
 Implementare:
 
 - inbox a due pannelli;

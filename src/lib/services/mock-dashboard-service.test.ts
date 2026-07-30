@@ -6,6 +6,7 @@ import {
   callSchema,
   channelStatusSchema,
   conversationSchema,
+  conversationStatusSchema,
   dailyMetricSchema,
   integrationErrorSchema,
   interventionSchema,
@@ -19,6 +20,8 @@ import {
 } from "@/lib/fixtures/pilot-salon";
 
 import {
+  ConversationNotFoundError,
+  ConversationTransitionError,
   InterventionNotFoundError,
   InterventionTransitionError,
   MockDashboardService,
@@ -69,6 +72,19 @@ describe("fixture del salone pilota", () => {
     ].toSorted();
 
     expect(fixtureOutcomes).toEqual(expectedOutcomes);
+  });
+
+  it("copre tutti gli stati previsti per le conversazioni", () => {
+    const expectedStatuses = conversationStatusSchema.options.toSorted();
+    const fixtureStatuses = [
+      ...new Set(
+        pilotFixtureSet.conversations.map(
+          (conversation) => conversation.status,
+        ),
+      ),
+    ].toSorted();
+
+    expect(fixtureStatuses).toEqual(expectedStatuses);
   });
 
   it("associa ogni entità operativa al salone", () => {
@@ -420,8 +436,36 @@ describe("MockDashboardService", () => {
     const conversations = await service.listConversations(PILOT_SALON_ID);
 
     expect(conversations[0].externalConversationKey).toBe(
-      "demo-conversation-human",
+      "demo-conversation-needs-intervention",
     );
+  });
+
+  it("filtra la inbox e calcola il riepilogo sull'insieme completo", async () => {
+    const inbox = await service.listConversationInbox(PILOT_SALON_ID, {
+      statuses: ["human_control", "waiting_customer"],
+      controls: ["human"],
+      query: "demo",
+    });
+
+    expect(inbox.items).toHaveLength(2);
+    expect(inbox.items.map((item) => item.conversation.status)).toEqual([
+      "human_control",
+      "waiting_customer",
+    ]);
+    expect(inbox.summary).toMatchObject({
+      totalConversations: 5,
+      needsIntervention: 1,
+      humanControlled: 2,
+      waitingCustomer: 1,
+      completed: 1,
+    });
+    expect(inbox.summary.statusCounts).toEqual({
+      ai_handled: 1,
+      needs_intervention: 1,
+      human_control: 1,
+      waiting_customer: 1,
+      completed: 1,
+    });
   });
 
   it("restituisce i messaggi della conversazione in ordine cronologico", async () => {
@@ -433,6 +477,150 @@ describe("MockDashboardService", () => {
     expect(detail?.messages).toHaveLength(2);
     expect(detail?.messages[0].author).toBe("customer");
     expect(detail?.messages[1].author).toBe("ai");
+    expect(detail?.aiRepliesAllowed).toBe(true);
+    expect(detail?.intervention).toBeNull();
+  });
+
+  it("prende il controllo e sospende le risposte IA", async () => {
+    const conversationId = pilotFixtureSet.conversations[1].id;
+
+    await service.takeConversationControl(
+      PILOT_SALON_ID,
+      conversationId,
+      "2026-07-30T11:40:00.000Z",
+    );
+    const detail = await service.getConversation(
+      PILOT_SALON_ID,
+      conversationId,
+    );
+
+    expect(detail).toMatchObject({
+      conversation: {
+        control: "human",
+        status: "human_control",
+        lastMessageAt: "2026-07-30T11:40:00.000Z",
+      },
+      intervention: { status: "in_progress" },
+      aiRepliesAllowed: false,
+    });
+    expect(detail?.messages.at(-1)).toMatchObject({
+      author: "system",
+      body: expect.stringContaining("risposte automatiche sono sospese"),
+    });
+  });
+
+  it("invia un messaggio manuale soltanto sotto controllo umano", async () => {
+    const conversationId = pilotFixtureSet.conversations[0].id;
+    const messageId = "31000000-0000-4000-8000-000000000099";
+
+    await expect(
+      service.sendManualMessage(PILOT_SALON_ID, conversationId, {
+        body: "Messaggio non consentito",
+      }),
+    ).rejects.toBeInstanceOf(ConversationTransitionError);
+
+    await service.takeConversationControl(
+      PILOT_SALON_ID,
+      conversationId,
+      "2026-07-30T11:41:00.000Z",
+    );
+    await expect(
+      service.sendManualMessage(PILOT_SALON_ID, conversationId, {
+        body: "  Risposta manuale dimostrativa.  ",
+        messageId,
+        occurredAt: "2026-07-30T11:42:00.000Z",
+      }),
+    ).resolves.toMatchObject({
+      id: messageId,
+      author: "human",
+      body: "Risposta manuale dimostrativa.",
+      status: "sent",
+    });
+
+    const detail = await service.getConversation(
+      PILOT_SALON_ID,
+      conversationId,
+    );
+    expect(detail?.conversation).toMatchObject({
+      control: "human",
+      status: "waiting_customer",
+      lastMessageAt: "2026-07-30T11:42:00.000Z",
+    });
+    expect(detail?.aiRepliesAllowed).toBe(false);
+    expect(detail?.messages.at(-1)?.id).toBe(messageId);
+  });
+
+  it("restituisce la conversazione all'IA e risolve l'intervento collegato", async () => {
+    const conversationId = pilotFixtureSet.conversations[1].id;
+
+    await service.takeConversationControl(
+      PILOT_SALON_ID,
+      conversationId,
+      "2026-07-30T11:43:00.000Z",
+    );
+    await service.releaseConversationControl(
+      PILOT_SALON_ID,
+      conversationId,
+      "2026-07-30T11:44:00.000Z",
+    );
+    const detail = await service.getConversation(
+      PILOT_SALON_ID,
+      conversationId,
+    );
+
+    expect(detail).toMatchObject({
+      conversation: { control: "ai", status: "ai_handled" },
+      intervention: {
+        status: "resolved",
+        resolutionNote:
+          "Richiesta gestita e conversazione restituita all'IA nella simulazione.",
+      },
+      aiRepliesAllowed: true,
+    });
+  });
+
+  it("completa una conversazione e blocca altri invii", async () => {
+    const conversationId = pilotFixtureSet.conversations[2].id;
+
+    await service.completeConversation(
+      PILOT_SALON_ID,
+      conversationId,
+      "2026-07-30T11:45:00.000Z",
+    );
+    const detail = await service.getConversation(
+      PILOT_SALON_ID,
+      conversationId,
+    );
+
+    expect(detail?.conversation.status).toBe("completed");
+    expect(detail?.aiRepliesAllowed).toBe(false);
+    await expect(
+      service.sendManualMessage(PILOT_SALON_ID, conversationId, {
+        body: "Messaggio dopo la chiusura",
+      }),
+    ).rejects.toBeInstanceOf(ConversationTransitionError);
+  });
+
+  it("valida testo, transizioni e conversazioni sconosciute", async () => {
+    const humanConversationId = pilotFixtureSet.conversations[2].id;
+
+    await expect(
+      service.sendManualMessage(PILOT_SALON_ID, humanConversationId, {
+        body: " ",
+      }),
+    ).rejects.toBeInstanceOf(RangeError);
+    await expect(
+      service.releaseConversationControl(
+        PILOT_SALON_ID,
+        pilotFixtureSet.conversations[0].id,
+      ),
+    ).rejects.toBeInstanceOf(ConversationTransitionError);
+    await expect(
+      service.takeConversationControl(
+        PILOT_SALON_ID,
+        "30000000-0000-4000-8000-000000000099",
+      ),
+    ).rejects.toBeInstanceOf(ConversationNotFoundError);
   });
 
   it("restituisce null per una conversazione inesistente", async () => {

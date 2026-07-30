@@ -4,6 +4,8 @@ import type {
   CallOutcome,
   ChannelStatus,
   Conversation,
+  ConversationControl,
+  ConversationStatus,
   DailyMetric,
   IntegrationError,
   Intervention,
@@ -85,6 +87,42 @@ export interface ResolveInterventionInput {
 export interface ConversationDetail {
   conversation: Conversation;
   messages: Message[];
+  intervention: Intervention | null;
+  bookingReference: BookingReference | null;
+  aiRepliesAllowed: boolean;
+}
+
+export interface ConversationFilters {
+  statuses?: ConversationStatus[];
+  controls?: ConversationControl[];
+  query?: string;
+}
+
+export interface ConversationListItem {
+  conversation: Conversation;
+  lastMessage: Message | null;
+  intervention: Intervention | null;
+}
+
+export interface ConversationInboxSummary {
+  totalConversations: number;
+  needsIntervention: number;
+  humanControlled: number;
+  waitingCustomer: number;
+  completed: number;
+  statusCounts: Record<ConversationStatus, number>;
+}
+
+export interface ConversationInbox {
+  items: ConversationListItem[];
+  totalItems: number;
+  summary: ConversationInboxSummary;
+}
+
+export interface SendManualMessageInput {
+  body: string;
+  occurredAt?: string;
+  messageId?: string;
 }
 
 export type OverviewActivity =
@@ -160,9 +198,33 @@ export interface DashboardService {
     occurredAt?: string,
   ): Promise<Intervention>;
   listConversations(salonId: string): Promise<Conversation[]>;
+  listConversationInbox(
+    salonId: string,
+    filters?: ConversationFilters,
+  ): Promise<ConversationInbox>;
   getConversation(
     salonId: string,
     conversationId: string,
   ): Promise<ConversationDetail | null>;
+  takeConversationControl(
+    salonId: string,
+    conversationId: string,
+    occurredAt?: string,
+  ): Promise<Conversation>;
+  releaseConversationControl(
+    salonId: string,
+    conversationId: string,
+    occurredAt?: string,
+  ): Promise<Conversation>;
+  completeConversation(
+    salonId: string,
+    conversationId: string,
+    occurredAt?: string,
+  ): Promise<Conversation>;
+  sendManualMessage(
+    salonId: string,
+    conversationId: string,
+    input: SendManualMessageInput,
+  ): Promise<Message>;
   getReceptionistSettings(salonId: string): Promise<ReceptionistSettings>;
 }

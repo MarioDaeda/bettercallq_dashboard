@@ -3,11 +3,19 @@ import type {
   Call,
   CallOutcome,
   Conversation,
+  ConversationStatus,
   DailyMetric,
   IntegrationError,
   Intervention,
+  Message,
 } from "@/lib/domain";
-import { callOutcomeSchema, interventionSchema } from "@/lib/domain";
+import {
+  callOutcomeSchema,
+  conversationSchema,
+  conversationStatusSchema,
+  interventionSchema,
+  messageSchema,
+} from "@/lib/domain";
 import {
   PILOT_SALON_ID,
   pilotFixtureSet,
@@ -21,6 +29,10 @@ import type {
   CallHistoryQuery,
   CallListItem,
   CallSummary,
+  ConversationFilters,
+  ConversationInbox,
+  ConversationInboxSummary,
+  ConversationListItem,
   ConversationDetail,
   DashboardService,
   DateRange,
@@ -29,6 +41,7 @@ import type {
   Overview,
   OverviewActivity,
   ResolveInterventionInput,
+  SendManualMessageInput,
 } from "./dashboard-service";
 
 export class SalonNotFoundError extends Error {
@@ -49,6 +62,20 @@ export class InterventionTransitionError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "InterventionTransitionError";
+  }
+}
+
+export class ConversationNotFoundError extends Error {
+  constructor(conversationId: string) {
+    super(`Conversazione non disponibile: ${conversationId}`);
+    this.name = "ConversationNotFoundError";
+  }
+}
+
+export class ConversationTransitionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConversationTransitionError";
   }
 }
 
@@ -121,6 +148,14 @@ const needsAttentionOutcomes: CallOutcome[] = [
   "abandoned",
 ];
 
+const emptyConversationStatusCounts = (): Record<
+  ConversationStatus,
+  number
+> =>
+  Object.fromEntries(
+    conversationStatusSchema.options.map((status) => [status, 0]),
+  ) as Record<ConversationStatus, number>;
+
 const interventionPriorityOrder: Record<Intervention["priority"], number> = {
   urgent: 0,
   high: 1,
@@ -164,10 +199,14 @@ const sortInterventions = (left: Intervention, right: Intervention) => {
 export class MockDashboardService implements DashboardService {
   private readonly fixtures: PilotFixtureSet;
   private interventions: Intervention[];
+  private conversations: Conversation[];
+  private messages: Message[];
 
   constructor(fixtures: PilotFixtureSet = pilotFixtureSet) {
     this.fixtures = fixtures;
     this.interventions = copy(fixtures.interventions);
+    this.conversations = copy(fixtures.conversations);
+    this.messages = copy(fixtures.messages);
   }
 
   private assertSalon(salonId: string) {
@@ -365,7 +404,7 @@ export class MockDashboardService implements DashboardService {
           item.salonId === salonId && item.id === intervention.callId,
       ) ?? null;
     const conversation =
-      this.fixtures.conversations.find(
+      this.conversations.find(
         (item) =>
           item.salonId === salonId &&
           item.id === intervention.conversationId,
@@ -464,7 +503,7 @@ export class MockDashboardService implements DashboardService {
   async listConversations(salonId: string) {
     this.assertSalon(salonId);
     return copy(
-      this.fixtures.conversations
+      this.conversations
         .filter((conversation) => conversation.salonId === salonId)
         .toSorted((left, right) =>
           (right.lastMessageAt ?? right.createdAt).localeCompare(
@@ -474,12 +513,75 @@ export class MockDashboardService implements DashboardService {
     );
   }
 
+  async listConversationInbox(
+    salonId: string,
+    filters: ConversationFilters = {},
+  ): Promise<ConversationInbox> {
+    this.assertSalon(salonId);
+    const conversations = this.conversations.filter(
+      (conversation) => conversation.salonId === salonId,
+    );
+    const query = filters.query?.trim().toLocaleLowerCase("it-IT");
+    const filtered = conversations
+      .filter(
+        (conversation) =>
+          filters.statuses === undefined ||
+          filters.statuses.includes(conversation.status),
+      )
+      .filter(
+        (conversation) =>
+          filters.controls === undefined ||
+          filters.controls.includes(conversation.control),
+      )
+      .filter((conversation) => {
+        if (!query) {
+          return true;
+        }
+
+        const searchableConversation = [
+          conversation.customerName,
+          conversation.customerPhone,
+          conversation.summary,
+        ]
+          .filter((value): value is string => value !== undefined)
+          .join(" ")
+          .toLocaleLowerCase("it-IT");
+        const searchableMessages = this.messages
+          .filter(
+            (message) =>
+              message.salonId === salonId &&
+              message.conversationId === conversation.id,
+          )
+          .map((message) => message.body)
+          .join(" ")
+          .toLocaleLowerCase("it-IT");
+
+        return (
+          searchableConversation.includes(query) ||
+          searchableMessages.includes(query)
+        );
+      })
+      .toSorted((left, right) =>
+        (right.lastMessageAt ?? right.createdAt).localeCompare(
+          left.lastMessageAt ?? left.createdAt,
+        ),
+      );
+
+    return copy({
+      items: filtered.map((conversation) =>
+        this.toConversationListItem(salonId, conversation),
+      ),
+      totalItems: filtered.length,
+      summary: calculateConversationSummary(conversations),
+    });
+  }
+
   async getConversation(
     salonId: string,
     conversationId: string,
   ): Promise<ConversationDetail | null> {
     this.assertSalon(salonId);
-    const conversation = this.fixtures.conversations.find(
+    const conversation = this.conversations.find(
       (item) => item.salonId === salonId && item.id === conversationId,
     );
 
@@ -487,15 +589,215 @@ export class MockDashboardService implements DashboardService {
       return null;
     }
 
-    const messages = this.fixtures.messages
+    return copy(this.toConversationDetail(salonId, conversation));
+  }
+
+  async takeConversationControl(
+    salonId: string,
+    conversationId: string,
+    occurredAt = new Date().toISOString(),
+  ) {
+    const current = this.requireConversation(salonId, conversationId);
+    if (current.status === "completed") {
+      throw new ConversationTransitionError(
+        "Una conversazione completata non può essere presa in carico.",
+      );
+    }
+    if (current.control === "human") {
+      return copy(current);
+    }
+
+    const updated = this.replaceConversation(
+      conversationSchema.parse({
+        ...current,
+        control: "human",
+        status: "human_control",
+        lastMessageAt: occurredAt,
+        updatedAt: occurredAt,
+      }),
+    );
+    this.appendSystemMessage(
+      salonId,
+      conversationId,
+      "Il salone ha preso il controllo. Le risposte automatiche sono sospese.",
+      occurredAt,
+    );
+
+    const intervention = this.findConversationIntervention(
+      salonId,
+      conversationId,
+    );
+    if (intervention?.status === "open") {
+      await this.markInterventionInProgress(
+        salonId,
+        intervention.id,
+        occurredAt,
+      );
+    }
+
+    return copy(updated);
+  }
+
+  async releaseConversationControl(
+    salonId: string,
+    conversationId: string,
+    occurredAt = new Date().toISOString(),
+  ) {
+    const current = this.requireConversation(salonId, conversationId);
+    if (current.status === "completed") {
+      throw new ConversationTransitionError(
+        "Una conversazione completata non può essere restituita all'IA.",
+      );
+    }
+    if (current.control !== "human") {
+      throw new ConversationTransitionError(
+        "Il controllo appartiene già all'IA.",
+      );
+    }
+
+    const updated = this.replaceConversation(
+      conversationSchema.parse({
+        ...current,
+        control: "ai",
+        status: "ai_handled",
+        lastMessageAt: occurredAt,
+        updatedAt: occurredAt,
+      }),
+    );
+    this.appendSystemMessage(
+      salonId,
+      conversationId,
+      "Il controllo è stato restituito all'IA nella simulazione.",
+      occurredAt,
+    );
+    await this.resolveConversationIntervention(
+      salonId,
+      conversationId,
+      "Richiesta gestita e conversazione restituita all'IA nella simulazione.",
+      occurredAt,
+    );
+
+    return copy(updated);
+  }
+
+  async completeConversation(
+    salonId: string,
+    conversationId: string,
+    occurredAt = new Date().toISOString(),
+  ) {
+    const current = this.requireConversation(salonId, conversationId);
+    if (current.status === "completed") {
+      return copy(current);
+    }
+    if (current.control !== "human") {
+      throw new ConversationTransitionError(
+        "Prendi il controllo prima di completare la conversazione.",
+      );
+    }
+
+    const updated = this.replaceConversation(
+      conversationSchema.parse({
+        ...current,
+        status: "completed",
+        lastMessageAt: occurredAt,
+        updatedAt: occurredAt,
+      }),
+    );
+    this.appendSystemMessage(
+      salonId,
+      conversationId,
+      "Conversazione completata manualmente nella simulazione.",
+      occurredAt,
+    );
+    await this.resolveConversationIntervention(
+      salonId,
+      conversationId,
+      "Conversazione completata manualmente nella simulazione.",
+      occurredAt,
+    );
+
+    return copy(updated);
+  }
+
+  async sendManualMessage(
+    salonId: string,
+    conversationId: string,
+    input: SendManualMessageInput,
+  ) {
+    const current = this.requireConversation(salonId, conversationId);
+    if (
+      current.control !== "human" ||
+      current.status === "completed"
+    ) {
+      throw new ConversationTransitionError(
+        "L'invio manuale richiede il controllo del salone.",
+      );
+    }
+
+    const body = input.body.trim();
+    if (body.length === 0 || body.length > 1000) {
+      throw new RangeError(
+        "Il messaggio deve contenere da 1 a 1000 caratteri.",
+      );
+    }
+
+    const occurredAt = input.occurredAt ?? new Date().toISOString();
+    const message = messageSchema.parse({
+      id: input.messageId ?? globalThis.crypto.randomUUID(),
+      salonId,
+      conversationId,
+      author: "human",
+      direction: "outbound",
+      body,
+      status: "sent",
+      sentAt: occurredAt,
+      createdAt: occurredAt,
+      updatedAt: occurredAt,
+    });
+    this.messages.push(message);
+    this.replaceConversation(
+      conversationSchema.parse({
+        ...current,
+        status: "waiting_customer",
+        lastMessageAt: occurredAt,
+        updatedAt: occurredAt,
+      }),
+    );
+
+    return copy(message);
+  }
+
+  private toConversationDetail(
+    salonId: string,
+    conversation: Conversation,
+  ): ConversationDetail {
+    const messages = this.messages
       .filter(
         (message) =>
           message.salonId === salonId &&
-          message.conversationId === conversationId,
+          message.conversationId === conversation.id,
       )
       .toSorted((left, right) => left.sentAt.localeCompare(right.sentAt));
+    const intervention = this.findConversationIntervention(
+      salonId,
+      conversation.id,
+    );
+    const bookingReference =
+      this.fixtures.bookingReferences.find(
+        (item) =>
+          item.salonId === salonId &&
+          item.id === conversation.bookingReferenceId,
+      ) ?? null;
 
-    return copy({ conversation, messages });
+    return {
+      conversation,
+      messages,
+      intervention,
+      bookingReference,
+      aiRepliesAllowed:
+        conversation.control === "ai" &&
+        conversation.status === "ai_handled",
+    };
   }
 
   async getReceptionistSettings(salonId: string) {
@@ -558,6 +860,7 @@ export class MockDashboardService implements DashboardService {
       recentActivities: newestActivities(
         this.fixtures,
         this.interventions,
+        this.conversations,
         salonId,
         range,
         timeZone,
@@ -572,6 +875,112 @@ export class MockDashboardService implements DashboardService {
       ),
       metrics,
     });
+  }
+
+  private requireConversation(salonId: string, conversationId: string) {
+    this.assertSalon(salonId);
+    const conversation = this.conversations.find(
+      (item) => item.salonId === salonId && item.id === conversationId,
+    );
+
+    if (conversation === undefined) {
+      throw new ConversationNotFoundError(conversationId);
+    }
+
+    return conversation;
+  }
+
+  private findConversationIntervention(
+    salonId: string,
+    conversationId: string,
+  ) {
+    return (
+      this.interventions
+        .filter(
+          (item) =>
+            item.salonId === salonId &&
+            item.conversationId === conversationId,
+        )
+        .toSorted(sortInterventions)
+        .at(0) ?? null
+    );
+  }
+
+  private toConversationListItem(
+    salonId: string,
+    conversation: Conversation,
+  ): ConversationListItem {
+    const lastMessage =
+      this.messages
+        .filter(
+          (message) =>
+            message.salonId === salonId &&
+            message.conversationId === conversation.id,
+        )
+        .toSorted((left, right) =>
+          right.sentAt.localeCompare(left.sentAt),
+        )
+        .at(0) ?? null;
+
+    return {
+      conversation,
+      lastMessage,
+      intervention: this.findConversationIntervention(
+        salonId,
+        conversation.id,
+      ),
+    };
+  }
+
+  private replaceConversation(conversation: Conversation) {
+    const index = this.conversations.findIndex(
+      (item) => item.id === conversation.id,
+    );
+    this.conversations[index] = conversation;
+    return copy(conversation);
+  }
+
+  private appendSystemMessage(
+    salonId: string,
+    conversationId: string,
+    body: string,
+    occurredAt: string,
+  ) {
+    this.messages.push(
+      messageSchema.parse({
+        id: globalThis.crypto.randomUUID(),
+        salonId,
+        conversationId,
+        author: "system",
+        direction: "outbound",
+        body,
+        status: "sent",
+        sentAt: occurredAt,
+        createdAt: occurredAt,
+        updatedAt: occurredAt,
+      }),
+    );
+  }
+
+  private async resolveConversationIntervention(
+    salonId: string,
+    conversationId: string,
+    resolutionNote: string,
+    occurredAt: string,
+  ) {
+    const intervention = this.findConversationIntervention(
+      salonId,
+      conversationId,
+    );
+    if (
+      intervention &&
+      ["open", "in_progress"].includes(intervention.status)
+    ) {
+      await this.resolveIntervention(salonId, intervention.id, {
+        resolutionNote,
+        occurredAt,
+      });
+    }
   }
 
   private requireIntervention(salonId: string, interventionId: string) {
@@ -642,6 +1051,28 @@ const calculateCallSummary = (calls: Call[]): CallSummary => {
   };
 };
 
+const calculateConversationSummary = (
+  conversations: Conversation[],
+): ConversationInboxSummary => {
+  const statusCounts = conversations.reduce((counts, conversation) => {
+    counts[conversation.status] += 1;
+    return counts;
+  }, emptyConversationStatusCounts());
+
+  return {
+    totalConversations: conversations.length,
+    needsIntervention: statusCounts.needs_intervention,
+    humanControlled: conversations.filter(
+      (conversation) =>
+        conversation.control === "human" &&
+        conversation.status !== "completed",
+    ).length,
+    waitingCustomer: statusCounts.waiting_customer,
+    completed: statusCounts.completed,
+    statusCounts,
+  };
+};
+
 const estimateMonthlyCost = (totalCostCents: number, measuredDays: number) =>
   measuredDays === 0
     ? 0
@@ -686,6 +1117,7 @@ const newestErrors = (
 const newestActivities = (
   fixtures: PilotFixtureSet,
   interventionsState: Intervention[],
+  conversationsState: Conversation[],
   salonId: string,
   range: DateRange,
   timeZone: string,
@@ -694,7 +1126,7 @@ const newestActivities = (
   const calls: OverviewActivity[] = fixtures.calls
     .filter((item) => item.salonId === salonId)
     .map((item) => ({ kind: "call", occurredAt: item.startedAt, item }));
-  const conversations: OverviewActivity[] = fixtures.conversations
+  const conversations: OverviewActivity[] = conversationsState
     .filter((item) => item.salonId === salonId)
     .map((item) => ({
       kind: "conversation",
