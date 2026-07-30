@@ -6,6 +6,7 @@ import type {
   IntegrationError,
   Intervention,
 } from "@/lib/domain";
+import { interventionSchema } from "@/lib/domain";
 import {
   PILOT_SALON_ID,
   pilotFixtureSet,
@@ -17,15 +18,31 @@ import type {
   ConversationDetail,
   DashboardService,
   DateRange,
+  InterventionDetail,
   InterventionFilters,
   Overview,
   OverviewActivity,
+  ResolveInterventionInput,
 } from "./dashboard-service";
 
 export class SalonNotFoundError extends Error {
   constructor(salonId: string) {
     super(`Salone non disponibile: ${salonId}`);
     this.name = "SalonNotFoundError";
+  }
+}
+
+export class InterventionNotFoundError extends Error {
+  constructor(interventionId: string) {
+    super(`Intervento non disponibile: ${interventionId}`);
+    this.name = "InterventionNotFoundError";
+  }
+}
+
+export class InterventionTransitionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InterventionTransitionError";
   }
 }
 
@@ -65,8 +82,68 @@ const isDateTimeWithinLocalDateRange = (
   timeZone: string,
 ) => isWithinLocalDateRange(toLocalDate(value, timeZone), range);
 
+const isWithinOptionalLocalDateRange = (
+  value: string,
+  from: string | undefined,
+  to: string | undefined,
+  timeZone: string,
+) => {
+  const localDate = toLocalDate(value, timeZone);
+
+  return (
+    (from === undefined || localDate >= from) &&
+    (to === undefined || localDate <= to)
+  );
+};
+
+const interventionPriorityOrder: Record<Intervention["priority"], number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+const interventionStatusOrder: Record<Intervention["status"], number> = {
+  open: 0,
+  in_progress: 1,
+  resolved: 2,
+  dismissed: 3,
+};
+
+const sortInterventions = (left: Intervention, right: Intervention) => {
+  const leftIsActive = ["open", "in_progress"].includes(left.status);
+  const rightIsActive = ["open", "in_progress"].includes(right.status);
+  if (leftIsActive !== rightIsActive) {
+    return leftIsActive ? -1 : 1;
+  }
+
+  const priorityDifference =
+    interventionPriorityOrder[left.priority] -
+    interventionPriorityOrder[right.priority];
+  if (priorityDifference !== 0) {
+    return priorityDifference;
+  }
+
+  const statusDifference =
+    interventionStatusOrder[left.status] -
+    interventionStatusOrder[right.status];
+  if (statusDifference !== 0) {
+    return statusDifference;
+  }
+
+  return leftIsActive
+    ? left.createdAt.localeCompare(right.createdAt)
+    : right.updatedAt.localeCompare(left.updatedAt);
+};
+
 export class MockDashboardService implements DashboardService {
-  constructor(private readonly fixtures: PilotFixtureSet = pilotFixtureSet) {}
+  private readonly fixtures: PilotFixtureSet;
+  private interventions: Intervention[];
+
+  constructor(fixtures: PilotFixtureSet = pilotFixtureSet) {
+    this.fixtures = fixtures;
+    this.interventions = copy(fixtures.interventions);
+  }
 
   private assertSalon(salonId: string) {
     if (salonId !== this.fixtures.salon.id) {
@@ -124,8 +201,15 @@ export class MockDashboardService implements DashboardService {
     filters: InterventionFilters = {},
   ) {
     this.assertSalon(salonId);
+    if (
+      filters.from !== undefined &&
+      filters.to !== undefined &&
+      filters.from > filters.to
+    ) {
+      throw new RangeError("L'intervallo degli interventi non è valido.");
+    }
 
-    const interventions = this.fixtures.interventions
+    const interventions = this.interventions
       .filter((intervention) => intervention.salonId === salonId)
       .filter(
         (intervention) =>
@@ -137,11 +221,142 @@ export class MockDashboardService implements DashboardService {
           filters.priorities === undefined ||
           filters.priorities.includes(intervention.priority),
       )
-      .toSorted((left, right) =>
-        right.createdAt.localeCompare(left.createdAt),
-      );
+      .filter(
+        (intervention) =>
+          filters.sources === undefined ||
+          filters.sources.includes(intervention.source),
+      )
+      .filter(
+        (intervention) =>
+          filters.reasons === undefined ||
+          filters.reasons.includes(intervention.reason),
+      )
+      .filter((intervention) =>
+        isWithinOptionalLocalDateRange(
+          intervention.createdAt,
+          filters.from,
+          filters.to,
+          this.fixtures.salon.timezone,
+        ),
+      )
+      .toSorted(sortInterventions);
 
     return copy(interventions);
+  }
+
+  async getIntervention(
+    salonId: string,
+    interventionId: string,
+  ): Promise<InterventionDetail | null> {
+    this.assertSalon(salonId);
+    const intervention = this.interventions.find(
+      (item) => item.salonId === salonId && item.id === interventionId,
+    );
+
+    if (intervention === undefined) {
+      return null;
+    }
+
+    const call =
+      this.fixtures.calls.find(
+        (item) =>
+          item.salonId === salonId && item.id === intervention.callId,
+      ) ?? null;
+    const conversation =
+      this.fixtures.conversations.find(
+        (item) =>
+          item.salonId === salonId &&
+          item.id === intervention.conversationId,
+      ) ?? null;
+    const bookingReference =
+      this.fixtures.bookingReferences.find(
+        (item) =>
+          item.salonId === salonId &&
+          item.id === intervention.bookingReferenceId,
+      ) ?? null;
+
+    return copy({ intervention, call, conversation, bookingReference });
+  }
+
+  async markInterventionInProgress(
+    salonId: string,
+    interventionId: string,
+    occurredAt = new Date().toISOString(),
+  ) {
+    const current = this.requireIntervention(salonId, interventionId);
+
+    if (current.status === "in_progress") {
+      return copy(current);
+    }
+    if (current.status !== "open") {
+      throw new InterventionTransitionError(
+        "Solo una richiesta aperta può essere presa in carico.",
+      );
+    }
+
+    return this.replaceIntervention(
+      interventionSchema.parse({
+        ...current,
+        status: "in_progress",
+        updatedAt: occurredAt,
+      }),
+    );
+  }
+
+  async resolveIntervention(
+    salonId: string,
+    interventionId: string,
+    input: ResolveInterventionInput,
+  ) {
+    const current = this.requireIntervention(salonId, interventionId);
+    if (!["open", "in_progress"].includes(current.status)) {
+      throw new InterventionTransitionError(
+        "Solo una richiesta attiva può essere segnata come risolta.",
+      );
+    }
+
+    const resolutionNote = input.resolutionNote.trim();
+    if (resolutionNote.length === 0) {
+      throw new RangeError("Inserisci una breve nota di risoluzione.");
+    }
+
+    const occurredAt = input.occurredAt ?? new Date().toISOString();
+    return this.replaceIntervention(
+      interventionSchema.parse({
+        ...current,
+        status: "resolved",
+        resolvedAt: occurredAt,
+        resolutionNote,
+        resolvedByUserId: input.resolvedByUserId,
+        updatedAt: occurredAt,
+      }),
+    );
+  }
+
+  async reopenIntervention(
+    salonId: string,
+    interventionId: string,
+    occurredAt = new Date().toISOString(),
+  ) {
+    const current = this.requireIntervention(salonId, interventionId);
+    if (!["resolved", "dismissed"].includes(current.status)) {
+      throw new InterventionTransitionError(
+        "Solo una richiesta chiusa può essere riaperta.",
+      );
+    }
+
+    const reopened = copy(current);
+    delete reopened.resolutionNote;
+    delete reopened.resolvedAt;
+    delete reopened.resolvedByUserId;
+
+    return this.replaceIntervention(
+      interventionSchema.parse({
+        ...reopened,
+        status: "open",
+        updatedAt: occurredAt,
+      }),
+    );
   }
 
   async listConversations(salonId: string) {
@@ -207,7 +422,7 @@ export class MockDashboardService implements DashboardService {
       metrics,
       (metric) => metric.estimatedCostCents,
     );
-    const openInterventions = this.fixtures.interventions.filter(
+    const openInterventions = this.interventions.filter(
       (intervention) =>
         intervention.salonId === salonId &&
         ["open", "in_progress"].includes(intervention.status),
@@ -240,6 +455,7 @@ export class MockDashboardService implements DashboardService {
       ),
       recentActivities: newestActivities(
         this.fixtures,
+        this.interventions,
         salonId,
         range,
         timeZone,
@@ -254,6 +470,27 @@ export class MockDashboardService implements DashboardService {
       ),
       metrics,
     });
+  }
+
+  private requireIntervention(salonId: string, interventionId: string) {
+    this.assertSalon(salonId);
+    const intervention = this.interventions.find(
+      (item) => item.salonId === salonId && item.id === interventionId,
+    );
+
+    if (intervention === undefined) {
+      throw new InterventionNotFoundError(interventionId);
+    }
+
+    return intervention;
+  }
+
+  private replaceIntervention(intervention: Intervention) {
+    const index = this.interventions.findIndex(
+      (item) => item.id === intervention.id,
+    );
+    this.interventions[index] = intervention;
+    return copy(intervention);
   }
 }
 
@@ -303,6 +540,7 @@ const newestErrors = (
 
 const newestActivities = (
   fixtures: PilotFixtureSet,
+  interventionsState: Intervention[],
   salonId: string,
   range: DateRange,
   timeZone: string,
@@ -318,7 +556,7 @@ const newestActivities = (
       occurredAt: item.lastMessageAt ?? item.updatedAt,
       item,
     }));
-  const interventions: OverviewActivity[] = fixtures.interventions
+  const interventions: OverviewActivity[] = interventionsState
     .filter((item) => item.salonId === salonId)
     .map((item) => ({
       kind: "intervention",

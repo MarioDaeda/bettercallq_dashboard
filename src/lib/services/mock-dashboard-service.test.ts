@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   bookingReferenceSchema,
@@ -19,11 +19,17 @@ import {
 } from "@/lib/fixtures/pilot-salon";
 
 import {
+  InterventionNotFoundError,
+  InterventionTransitionError,
   MockDashboardService,
   SalonNotFoundError,
 } from "./mock-dashboard-service";
 
-const service = new MockDashboardService();
+let service: MockDashboardService;
+
+beforeEach(() => {
+  service = new MockDashboardService();
+});
 
 describe("fixture del salone pilota", () => {
   it("valida il salone", () => {
@@ -148,6 +154,149 @@ describe("MockDashboardService", () => {
 
     expect(interventions).toHaveLength(1);
     expect(interventions[0].reason).toBe("booking_sync_failed");
+  });
+
+  it("filtra gli interventi per canale, motivo e intervallo locale", async () => {
+    const interventions = await service.listInterventions(PILOT_SALON_ID, {
+      sources: ["whatsapp"],
+      reasons: ["special_request"],
+      from: "2026-07-30",
+      to: "2026-07-30",
+    });
+
+    expect(interventions).toHaveLength(1);
+    expect(interventions[0]).toMatchObject({
+      source: "whatsapp",
+      reason: "special_request",
+    });
+  });
+
+  it("mantiene la priorità come ordine principale della coda attiva", async () => {
+    const interventions = await service.listInterventions(PILOT_SALON_ID, {
+      statuses: ["open", "in_progress"],
+    });
+
+    expect(interventions.map((item) => item.priority)).toEqual([
+      "urgent",
+      "high",
+      "medium",
+    ]);
+
+    await service.markInterventionInProgress(
+      PILOT_SALON_ID,
+      pilotFixtureSet.interventions[1].id,
+      "2026-07-30T11:40:00.000Z",
+    );
+    const updatedQueue = await service.listInterventions(PILOT_SALON_ID, {
+      statuses: ["open", "in_progress"],
+    });
+    expect(updatedQueue[0].priority).toBe("urgent");
+  });
+
+  it("restituisce il dettaglio con i riferimenti correlati", async () => {
+    const detail = await service.getIntervention(
+      PILOT_SALON_ID,
+      pilotFixtureSet.interventions[1].id,
+    );
+
+    expect(detail?.intervention.reason).toBe("booking_sync_failed");
+    expect(detail?.call?.outcome).toBe("technical_error");
+    expect(detail?.bookingReference?.syncStatus).toBe("failed");
+    expect(detail?.conversation).toBeNull();
+  });
+
+  it("restituisce null per un intervento inesistente", async () => {
+    await expect(
+      service.getIntervention(
+        PILOT_SALON_ID,
+        "40000000-0000-4000-8000-000000000099",
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it("prende in carico e risolve aggiornando coda e panoramica", async () => {
+    const interventionId = pilotFixtureSet.interventions[0].id;
+
+    await expect(
+      service.markInterventionInProgress(
+        PILOT_SALON_ID,
+        interventionId,
+        "2026-07-30T11:45:00.000Z",
+      ),
+    ).resolves.toMatchObject({ status: "in_progress" });
+
+    await expect(
+      service.resolveIntervention(PILOT_SALON_ID, interventionId, {
+        resolutionNote: "Cliente richiamato nella simulazione.",
+        occurredAt: "2026-07-30T11:50:00.000Z",
+      }),
+    ).resolves.toMatchObject({
+      status: "resolved",
+      resolutionNote: "Cliente richiamato nella simulazione.",
+      resolvedAt: "2026-07-30T11:50:00.000Z",
+    });
+
+    const [active, overview] = await Promise.all([
+      service.listInterventions(PILOT_SALON_ID, {
+        statuses: ["open", "in_progress"],
+      }),
+      service.getOverview(PILOT_SALON_ID, {
+        from: "2026-07-30",
+        to: "2026-07-30",
+      }),
+    ]);
+
+    expect(active).toHaveLength(2);
+    expect(overview.openInterventions).toBe(2);
+  });
+
+  it("riapre una richiesta e ripristina il KPI attivo", async () => {
+    const interventionId = pilotFixtureSet.interventions[3].id;
+
+    const reopened = await service.reopenIntervention(
+      PILOT_SALON_ID,
+      interventionId,
+      "2026-07-30T11:55:00.000Z",
+    );
+    const overview = await service.getOverview(PILOT_SALON_ID, {
+      from: "2026-07-30",
+      to: "2026-07-30",
+    });
+
+    expect(reopened).toMatchObject({
+      status: "open",
+      updatedAt: "2026-07-30T11:55:00.000Z",
+    });
+    expect(reopened.resolvedAt).toBeUndefined();
+    expect(reopened.resolutionNote).toBeUndefined();
+    expect(overview.openInterventions).toBe(4);
+  });
+
+  it("rifiuta transizioni non valide e interventi sconosciuti", async () => {
+    const resolvedInterventionId = pilotFixtureSet.interventions[3].id;
+
+    await expect(
+      service.markInterventionInProgress(
+        PILOT_SALON_ID,
+        resolvedInterventionId,
+      ),
+    ).rejects.toBeInstanceOf(InterventionTransitionError);
+    await expect(
+      service.resolveIntervention(
+        PILOT_SALON_ID,
+        "40000000-0000-4000-8000-000000000099",
+        { resolutionNote: "Nota demo" },
+      ),
+    ).rejects.toBeInstanceOf(InterventionNotFoundError);
+  });
+
+  it("rifiuta intervalli degli interventi invertiti", async () => {
+    await expect(
+      service.listInterventions(PILOT_SALON_ID, {
+        from: "2026-07-31",
+        to: "2026-07-30",
+      }),
+    ).rejects.toBeInstanceOf(RangeError);
   });
 
   it("ordina le conversazioni dalla più recente", async () => {

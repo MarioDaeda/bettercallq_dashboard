@@ -8,6 +8,8 @@ import type {
   IntegrationError,
   Intervention,
   InterventionPriority,
+  InterventionReason,
+  InterventionSource,
   InterventionStatus,
   Message,
   ReceptionistSettings,
@@ -28,6 +30,23 @@ export interface CallFilters {
 export interface InterventionFilters {
   statuses?: InterventionStatus[];
   priorities?: InterventionPriority[];
+  sources?: InterventionSource[];
+  reasons?: InterventionReason[];
+  from?: string;
+  to?: string;
+}
+
+export interface InterventionDetail {
+  intervention: Intervention;
+  call: Call | null;
+  conversation: Conversation | null;
+  bookingReference: BookingReference | null;
+}
+
+export interface ResolveInterventionInput {
+  resolutionNote: string;
+  occurredAt?: string;
+  resolvedByUserId?: string;
 }
 
 export interface ConversationDetail {
@@ -83,6 +102,25 @@ export interface DashboardService {
     salonId: string,
     filters?: InterventionFilters,
   ): Promise<Intervention[]>;
+  getIntervention(
+    salonId: string,
+    interventionId: string,
+  ): Promise<InterventionDetail | null>;
+  markInterventionInProgress(
+    salonId: string,
+    interventionId: string,
+    occurredAt?: string,
+  ): Promise<Intervention>;
+  resolveIntervention(
+    salonId: string,
+    interventionId: string,
+    input: ResolveInterventionInput,
+  ): Promise<Intervention>;
+  reopenIntervention(
+    salonId: string,
+    interventionId: string,
+    occurredAt?: string,
+  ): Promise<Intervention>;
   listConversations(salonId: string): Promise<Conversation[]>;
   getConversation(
     salonId: string,

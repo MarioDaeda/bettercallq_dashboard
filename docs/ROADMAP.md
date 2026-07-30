@@ -137,6 +137,8 @@ Uscita:
 
 ### Task 6A — Da gestire
 
+**Stato:** completata
+
 Implementare:
 
 - coda;

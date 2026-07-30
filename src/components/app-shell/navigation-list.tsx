@@ -14,6 +14,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
+import { useInterventionAttentionCount } from "@/components/interventions/intervention-session-context";
 import {
   appNavigation,
   type NavigationIcon,
@@ -40,6 +41,8 @@ export function NavigationList({
   onNavigate,
 }: NavigationListProps) {
   const pathname = usePathname();
+  const currentAttentionCount =
+    useInterventionAttentionCount(attentionCount);
 
   return (
     <nav aria-label="Navigazione principale" className="flex flex-col gap-1.5">
@@ -50,7 +53,7 @@ export function NavigationList({
             ? pathname === "/"
             : pathname.startsWith(item.href);
         const showCount =
-          item.icon === "interventions" && attentionCount > 0;
+          item.icon === "interventions" && currentAttentionCount > 0;
 
         return (
           <Link
@@ -84,7 +87,7 @@ export function NavigationList({
                 )}
                 variant="outline"
               >
-                {attentionCount}
+                {currentAttentionCount}
               </Badge>
             ) : null}
           </Link>

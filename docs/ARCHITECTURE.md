@@ -134,12 +134,29 @@ interface DashboardService {
   listInterventions(
     salonId: string,
     filters: InterventionFilters,
-  ): Promise<InterventionPage>;
-  listCalls(salonId: string, filters: CallFilters): Promise<CallPage>;
+  ): Promise<Intervention[]>;
+  getIntervention(
+    salonId: string,
+    interventionId: string,
+  ): Promise<InterventionDetail | null>;
+  markInterventionInProgress(
+    salonId: string,
+    interventionId: string,
+  ): Promise<Intervention>;
+  resolveIntervention(
+    salonId: string,
+    interventionId: string,
+    input: ResolveInterventionInput,
+  ): Promise<Intervention>;
+  reopenIntervention(
+    salonId: string,
+    interventionId: string,
+  ): Promise<Intervention>;
+  listCalls(salonId: string, filters: CallFilters): Promise<Call[]>;
   getConversation(
     salonId: string,
     conversationId: string,
-  ): Promise<ConversationDetail>;
+  ): Promise<ConversationDetail | null>;
   getReceptionistSettings(salonId: string): Promise<ReceptionistSettings>;
 }
 ```
@@ -147,6 +164,11 @@ interface DashboardService {
 Nel prototipo il service layer legge fixture. In produzione chiama API o
 repository reali. I componenti non cambiano quando viene sostituita
 l'implementazione.
+
+Le mutazioni della Task 6A sono simulate e conservate soltanto nell'istanza
+client del service mock. Coda, navigazione e widget della Panoramica condividono
+lo stesso stato durante la sessione; il ricaricamento della pagina ripristina le
+fixture originali. La persistenza viene introdotta nella Task 8.
 
 ### 5.4 Repository
 
