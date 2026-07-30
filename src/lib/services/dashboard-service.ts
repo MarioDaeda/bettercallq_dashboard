@@ -1,4 +1,5 @@
 import type {
+  BookingReference,
   Call,
   CallOutcome,
   ChannelStatus,
@@ -34,6 +35,28 @@ export interface ConversationDetail {
   messages: Message[];
 }
 
+export type OverviewActivity =
+  | {
+      kind: "call";
+      occurredAt: string;
+      item: Call;
+    }
+  | {
+      kind: "conversation";
+      occurredAt: string;
+      item: Conversation;
+    }
+  | {
+      kind: "intervention";
+      occurredAt: string;
+      item: Intervention;
+    }
+  | {
+      kind: "booking";
+      occurredAt: string;
+      item: BookingReference;
+    };
+
 export interface Overview {
   salonId: string;
   range: DateRange;
@@ -42,14 +65,17 @@ export interface Overview {
   bookingsAttributed: number;
   openInterventions: number;
   estimatedCostCents: number;
+  estimatedMonthlyCostCents: number;
   urgentInterventions: Intervention[];
   recentCalls: Call[];
+  recentActivities: OverviewActivity[];
   recentErrors: IntegrationError[];
   metrics: DailyMetric[];
 }
 
 export interface DashboardService {
   getSalon(salonId: string): Promise<Salon>;
+  getReportingDate(salonId: string): Promise<string>;
   getChannelStatuses(salonId: string): Promise<ChannelStatus[]>;
   getOverview(salonId: string, range: DateRange): Promise<Overview>;
   listCalls(salonId: string, filters?: CallFilters): Promise<Call[]>;

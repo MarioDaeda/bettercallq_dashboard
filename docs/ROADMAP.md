@@ -117,6 +117,8 @@ Uscita:
 
 ### Task 5 — Panoramica
 
+**Stato:** completata
+
 Implementare una griglia responsive a 12 colonne con:
 
 - quattro KPI;

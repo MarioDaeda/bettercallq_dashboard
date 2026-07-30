@@ -15,10 +15,12 @@ Le fondamenta del prototipo sono complete:
 - design system chiaro/scuro;
 - app shell responsive;
 - sette sezioni navigabili;
+- Panoramica completa con KPI, canali, coda, grafico, attività ed errori;
+- filtri temporali collegati al service mock;
 - loading, empty ed error state condivisi.
 
-Le pagine operative restano intenzionalmente minimali. Verranno completate una
-alla volta nelle task successive, iniziando dalla Panoramica.
+Le altre pagine operative restano intenzionalmente minimali e verranno
+completate una alla volta nelle task successive.
 
 ## Stack
 
@@ -62,11 +64,13 @@ src/
 ├── app/                  # route, layout e stati Next.js
 ├── components/
 │   ├── app-shell/        # sidebar, drawer, header e tema
+│   ├── overview/         # widget tipizzati della Panoramica
 │   ├── shared/           # intestazioni e stati condivisi
 │   └── ui/               # primitive UI
 └── lib/
     ├── domain/           # schemi Zod e tipi TypeScript
     ├── fixtures/         # soli dati dimostrativi
+    ├── overview/         # filtri e formattazione della Panoramica
     └── services/         # contratto e implementazione mock
 ```
 

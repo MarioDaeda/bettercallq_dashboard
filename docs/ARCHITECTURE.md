@@ -129,6 +129,7 @@ Espone operazioni stabili alle pagine:
 
 ```ts
 interface DashboardService {
+  getReportingDate(salonId: string): Promise<string>;
   getOverview(salonId: string, range: DateRange): Promise<Overview>;
   listInterventions(
     salonId: string,
@@ -394,4 +395,3 @@ prima del pilota con dati reali.
 - retention definitiva;
 - ruoli utente;
 - hosting della dashboard.
-

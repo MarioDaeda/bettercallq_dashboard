@@ -114,6 +114,12 @@ describe("MockDashboardService", () => {
     });
   });
 
+  it("espone la data più recente disponibile senza leggere le fixture dalla pagina", async () => {
+    await expect(service.getReportingDate(PILOT_SALON_ID)).resolves.toBe(
+      "2026-07-30",
+    );
+  });
+
   it("filtra le chiamate per esito", async () => {
     const calls = await service.listCalls(PILOT_SALON_ID, {
       outcomes: ["technical_error"],
@@ -183,7 +189,35 @@ describe("MockDashboardService", () => {
       bookingsAttributed: 5,
       openInterventions: 3,
       estimatedCostCents: 97,
+      estimatedMonthlyCostCents: 1455,
     });
     expect(overview.metrics).toHaveLength(2);
+    expect(overview.recentActivities).toHaveLength(6);
+  });
+
+  it("collega il periodo a metriche, chiamate, attività ed errori", async () => {
+    const overview = await service.getOverview(PILOT_SALON_ID, {
+      from: "2026-07-27",
+      to: "2026-07-27",
+    });
+
+    expect(overview).toMatchObject({
+      callsReceived: 8,
+      bookingsAttributed: 3,
+      estimatedCostCents: 48,
+      estimatedMonthlyCostCents: 1440,
+    });
+    expect(overview.recentCalls).toEqual([]);
+    expect(overview.recentActivities).toEqual([]);
+    expect(overview.recentErrors).toEqual([]);
+  });
+
+  it("rifiuta intervalli temporali invertiti", async () => {
+    await expect(
+      service.getOverview(PILOT_SALON_ID, {
+        from: "2026-07-30",
+        to: "2026-07-29",
+      }),
+    ).rejects.toBeInstanceOf(RangeError);
   });
 });

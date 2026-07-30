@@ -1,4 +1,5 @@
 import type {
+  BookingReference,
   Call,
   Conversation,
   DailyMetric,
@@ -18,6 +19,7 @@ import type {
   DateRange,
   InterventionFilters,
   Overview,
+  OverviewActivity,
 } from "./dashboard-service";
 
 export class SalonNotFoundError extends Error {
@@ -44,6 +46,25 @@ const isWithinDateTimeRange = (
 const isWithinLocalDateRange = (date: string, range: DateRange) =>
   date >= range.from && date <= range.to;
 
+const toLocalDate = (value: string, timeZone: string) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone,
+    year: "numeric",
+  }).formatToParts(new Date(value));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value;
+
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
+
+const isDateTimeWithinLocalDateRange = (
+  value: string,
+  range: DateRange,
+  timeZone: string,
+) => isWithinLocalDateRange(toLocalDate(value, timeZone), range);
+
 export class MockDashboardService implements DashboardService {
   constructor(private readonly fixtures: PilotFixtureSet = pilotFixtureSet) {}
 
@@ -56,6 +77,17 @@ export class MockDashboardService implements DashboardService {
   async getSalon(salonId: string) {
     this.assertSalon(salonId);
     return copy(this.fixtures.salon);
+  }
+
+  async getReportingDate(salonId: string) {
+    this.assertSalon(salonId);
+
+    return (
+      this.fixtures.dailyMetrics
+        .filter((metric) => metric.salonId === salonId)
+        .toSorted((left, right) => right.date.localeCompare(left.date))
+        .at(0)?.date ?? toLocalDate(this.fixtures.salon.updatedAt, this.fixtures.salon.timezone)
+    );
   }
 
   async getChannelStatuses(salonId: string) {
@@ -159,7 +191,11 @@ export class MockDashboardService implements DashboardService {
     range: DateRange,
   ): Promise<Overview> {
     this.assertSalon(salonId);
+    if (range.from > range.to) {
+      throw new RangeError("L'intervallo della panoramica non è valido.");
+    }
 
+    const timeZone = this.fixtures.salon.timezone;
     const metrics = this.fixtures.dailyMetrics
       .filter(
         (metric) =>
@@ -167,6 +203,10 @@ export class MockDashboardService implements DashboardService {
           isWithinLocalDateRange(metric.date, range),
       )
       .toSorted((left, right) => left.date.localeCompare(right.date));
+    const estimatedCostCents = sum(
+      metrics,
+      (metric) => metric.estimatedCostCents,
+    );
     const openInterventions = this.fixtures.interventions.filter(
       (intervention) =>
         intervention.salonId === salonId &&
@@ -183,17 +223,33 @@ export class MockDashboardService implements DashboardService {
         (metric) => metric.bookingsAttributed,
       ),
       openInterventions: openInterventions.length,
-      estimatedCostCents: sum(
-        metrics,
-        (metric) => metric.estimatedCostCents,
+      estimatedCostCents,
+      estimatedMonthlyCostCents: estimateMonthlyCost(
+        estimatedCostCents,
+        metrics.length,
       ),
       urgentInterventions: openInterventions.filter(
         (intervention) => intervention.priority === "urgent",
       ),
-      recentCalls: newestCalls(this.fixtures.calls, salonId, 5),
+      recentCalls: newestCalls(
+        this.fixtures.calls,
+        salonId,
+        range,
+        timeZone,
+        5,
+      ),
+      recentActivities: newestActivities(
+        this.fixtures,
+        salonId,
+        range,
+        timeZone,
+        6,
+      ),
       recentErrors: newestErrors(
         this.fixtures.integrationErrors,
         salonId,
+        range,
+        timeZone,
         5,
       ),
       metrics,
@@ -204,9 +260,24 @@ export class MockDashboardService implements DashboardService {
 const sum = <T>(items: T[], select: (item: T) => number) =>
   items.reduce((total, item) => total + select(item), 0);
 
-const newestCalls = (calls: Call[], salonId: string, limit: number) =>
+const estimateMonthlyCost = (totalCostCents: number, measuredDays: number) =>
+  measuredDays === 0
+    ? 0
+    : Math.round((totalCostCents / measuredDays) * 30);
+
+const newestCalls = (
+  calls: Call[],
+  salonId: string,
+  range: DateRange,
+  timeZone: string,
+  limit: number,
+) =>
   calls
-    .filter((call) => call.salonId === salonId)
+    .filter(
+      (call) =>
+        call.salonId === salonId &&
+        isDateTimeWithinLocalDateRange(call.startedAt, range, timeZone),
+    )
     .toSorted((left, right) =>
       right.startedAt.localeCompare(left.startedAt),
     )
@@ -215,14 +286,66 @@ const newestCalls = (calls: Call[], salonId: string, limit: number) =>
 const newestErrors = (
   errors: IntegrationError[],
   salonId: string,
+  range: DateRange,
+  timeZone: string,
   limit: number,
 ) =>
   errors
-    .filter((error) => error.salonId === salonId)
+    .filter(
+      (error) =>
+        error.salonId === salonId &&
+        isDateTimeWithinLocalDateRange(error.createdAt, range, timeZone),
+    )
     .toSorted((left, right) =>
       right.createdAt.localeCompare(left.createdAt),
     )
     .slice(0, limit);
+
+const newestActivities = (
+  fixtures: PilotFixtureSet,
+  salonId: string,
+  range: DateRange,
+  timeZone: string,
+  limit: number,
+): OverviewActivity[] => {
+  const calls: OverviewActivity[] = fixtures.calls
+    .filter((item) => item.salonId === salonId)
+    .map((item) => ({ kind: "call", occurredAt: item.startedAt, item }));
+  const conversations: OverviewActivity[] = fixtures.conversations
+    .filter((item) => item.salonId === salonId)
+    .map((item) => ({
+      kind: "conversation",
+      occurredAt: item.lastMessageAt ?? item.updatedAt,
+      item,
+    }));
+  const interventions: OverviewActivity[] = fixtures.interventions
+    .filter((item) => item.salonId === salonId)
+    .map((item) => ({
+      kind: "intervention",
+      occurredAt: item.createdAt,
+      item,
+    }));
+  const bookings: OverviewActivity[] = fixtures.bookingReferences
+    .filter((item) => item.salonId === salonId)
+    .map((item: BookingReference) => ({
+      kind: "booking",
+      occurredAt: item.createdAt,
+      item,
+    }));
+
+  return [...calls, ...conversations, ...interventions, ...bookings]
+    .filter((activity) =>
+      isDateTimeWithinLocalDateRange(
+        activity.occurredAt,
+        range,
+        timeZone,
+      ),
+    )
+    .toSorted((left, right) =>
+      right.occurredAt.localeCompare(left.occurredAt),
+    )
+    .slice(0, limit);
+};
 
 export const dashboardService = new MockDashboardService();
 export { PILOT_SALON_ID };
