@@ -192,6 +192,8 @@ Uscita:
 
 ### Task 7A — Impostazioni IA
 
+**Stato:** completata
+
 Implementare moduli per:
 
 - profilo salone;

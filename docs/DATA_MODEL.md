@@ -384,6 +384,13 @@ interface EscalationSettings {
 Prima della sincronizzazione dei servizi con Treatwell va definita la proprietà
 di ogni campo: BetterCallQ, Treatwell o modifica manuale.
 
+Nel prototipo, `UpdateReceptionistSettingsInput` contiene soltanto le
+sottostrutture configurabili e viene validato prima della mutazione. Il service
+incrementa `version` e `updatedAt` a ogni salvataggio, mentre `publishedAt`
+rimane invariato: una versione salvata può quindi essere più recente di quella
+effettivamente applicata alla receptionist. La pubblicazione verso Vapi verrà
+introdotta soltanto nella fase di integrazione reale.
+
 ### 5.11 IntegrationError
 
 Errore tecnico normalizzato.

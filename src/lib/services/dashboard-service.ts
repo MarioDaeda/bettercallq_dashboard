@@ -16,6 +16,7 @@ import type {
   Message,
   ReceptionistSettings,
   Salon,
+  UpdateReceptionistSettingsInput,
 } from "@/lib/domain";
 
 export interface DateRange {
@@ -227,4 +228,9 @@ export interface DashboardService {
     input: SendManualMessageInput,
   ): Promise<Message>;
   getReceptionistSettings(salonId: string): Promise<ReceptionistSettings>;
+  updateReceptionistSettings(
+    salonId: string,
+    input: UpdateReceptionistSettingsInput,
+    occurredAt?: string,
+  ): Promise<ReceptionistSettings>;
 }

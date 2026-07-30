@@ -28,10 +28,14 @@ Le fondamenta del prototipo sono complete:
   riferimenti e deep link verso “Da gestire”;
 - presa e rilascio del controllo, invio manuale e completamento simulati con
   blocco delle risposte IA durante la gestione umana;
+- “Impostazioni IA” completa con profilo informativo, servizi, orari e
+  chiusure, FAQ, politiche, tono, regole di prenotazione ed escalation;
+- validazione Zod, versionamento nel service mock e protezione delle modifiche
+  non salvate, senza aggiornamento automatico di Vapi;
 - loading, empty ed error state condivisi.
 
-Le pagine Impostazioni IA, QR e canali e Monitoraggio restano intenzionalmente
-minimali e verranno completate una alla volta nelle task successive.
+Le pagine QR e canali e Monitoraggio restano intenzionalmente minimali e
+verranno completate una alla volta nelle task successive.
 
 ## Stack
 
@@ -78,6 +82,7 @@ src/
 │   ├── calls/            # storico, filtri, paginazione e dettaglio chiamate
 │   ├── interventions/    # coda, filtri, dettaglio e azioni simulate
 │   ├── overview/         # widget tipizzati della Panoramica
+│   ├── settings/         # moduli strutturati delle Impostazioni IA
 │   ├── shared/           # intestazioni e stati condivisi
 │   ├── whatsapp/         # inbox, messaggi, controllo e invio simulato
 │   └── ui/               # primitive UI
@@ -87,6 +92,7 @@ src/
     ├── calls/            # etichette, periodi e formattazione chiamate
     ├── interventions/    # etichette e formattazione della coda
     ├── overview/         # filtri e formattazione della Panoramica
+    ├── settings/         # sezioni, helper e validazione del form
     ├── whatsapp/         # etichette e formattazione conversazioni
     └── services/         # contratto e implementazione mock
 ```
