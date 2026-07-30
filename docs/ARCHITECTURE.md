@@ -183,6 +183,10 @@ interface DashboardService {
     conversationId: string,
   ): Promise<Conversation>;
   getReceptionistSettings(salonId: string): Promise<ReceptionistSettings>;
+  updateReceptionistSettings(
+    salonId: string,
+    input: UpdateReceptionistSettingsInput,
+  ): Promise<ReceptionistSettings>;
 }
 ```
 
@@ -209,6 +213,16 @@ rilascio riattiva l'IA e il completamento chiude il thread, risolvendo
 l'eventuale intervento attivo. Il dettaglio aggrega ultimo stato, messaggi,
 appuntamento e richiesta collegata. Nessuna mutazione chiama Meta e il
 ricaricamento ripristina le fixture.
+
+La Task 7A mantiene una copia modificabile di `ReceptionistSettings`
+nell'istanza client del service mock. L'input di aggiornamento contiene soltanto
+i campi configurabili: identificativi, `salonId`, versione e timestamp restano
+responsabilità del service. Ogni salvataggio valido incrementa `version` e
+`updatedAt`, ma conserva `publishedAt`: salvare in BetterCallQ non equivale a
+pubblicare un nuovo prompt su Vapi. La UI applica la stessa validazione Zod del
+service, segnala la sezione da correggere e protegge le modifiche non salvate.
+Il ricaricamento ripristina la fixture originale fino alla persistenza della
+Task 8.
 
 ### 5.4 Repository
 

@@ -632,6 +632,76 @@ describe("MockDashboardService", () => {
     ).resolves.toBeNull();
   });
 
+  it("salva e versiona le impostazioni senza pubblicarle su Vapi", async () => {
+    const current = await service.getReceptionistSettings(PILOT_SALON_ID);
+    const nextInput = {
+      salonProfile: {
+        ...current.salonProfile,
+        description:
+          "Nuova descrizione dimostrativa salvata soltanto nel service mock.",
+      },
+      openingHours: current.openingHours,
+      closures: current.closures,
+      services: current.services,
+      faqs: current.faqs,
+      policies: current.policies,
+      escalation: current.escalation,
+      voiceAndTone: current.voiceAndTone,
+      bookingRules: current.bookingRules,
+    };
+
+    const saved = await service.updateReceptionistSettings(
+      PILOT_SALON_ID,
+      nextInput,
+      "2026-07-30T12:00:00.000Z",
+    );
+
+    expect(saved).toMatchObject({
+      version: current.version + 1,
+      updatedAt: "2026-07-30T12:00:00.000Z",
+      publishedAt: current.publishedAt,
+      salonProfile: {
+        description:
+          "Nuova descrizione dimostrativa salvata soltanto nel service mock.",
+      },
+    });
+
+    saved.salonProfile.description = "Mutazione esterna";
+    await expect(
+      service.getReceptionistSettings(PILOT_SALON_ID),
+    ).resolves.toMatchObject({
+      salonProfile: {
+        description:
+          "Nuova descrizione dimostrativa salvata soltanto nel service mock.",
+      },
+    });
+  });
+
+  it("non modifica le impostazioni quando l’aggiornamento non è valido", async () => {
+    const current = await service.getReceptionistSettings(PILOT_SALON_ID);
+    const invalidInput = {
+      salonProfile: {
+        ...current.salonProfile,
+        description: "",
+      },
+      openingHours: current.openingHours,
+      closures: current.closures,
+      services: current.services,
+      faqs: current.faqs,
+      policies: current.policies,
+      escalation: current.escalation,
+      voiceAndTone: current.voiceAndTone,
+      bookingRules: current.bookingRules,
+    };
+
+    await expect(
+      service.updateReceptionistSettings(PILOT_SALON_ID, invalidInput),
+    ).rejects.toThrow();
+    await expect(
+      service.getReceptionistSettings(PILOT_SALON_ID),
+    ).resolves.toEqual(current);
+  });
+
   it("calcola il riepilogo dal service layer", async () => {
     const overview = await service.getOverview(PILOT_SALON_ID, {
       from: "2026-07-29",

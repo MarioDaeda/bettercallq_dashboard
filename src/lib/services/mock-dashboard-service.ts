@@ -8,6 +8,8 @@ import type {
   IntegrationError,
   Intervention,
   Message,
+  ReceptionistSettings,
+  UpdateReceptionistSettingsInput,
 } from "@/lib/domain";
 import {
   callOutcomeSchema,
@@ -15,6 +17,8 @@ import {
   conversationStatusSchema,
   interventionSchema,
   messageSchema,
+  receptionistSettingsSchema,
+  updateReceptionistSettingsInputSchema,
 } from "@/lib/domain";
 import {
   PILOT_SALON_ID,
@@ -201,12 +205,14 @@ export class MockDashboardService implements DashboardService {
   private interventions: Intervention[];
   private conversations: Conversation[];
   private messages: Message[];
+  private receptionistSettings: ReceptionistSettings;
 
   constructor(fixtures: PilotFixtureSet = pilotFixtureSet) {
     this.fixtures = fixtures;
     this.interventions = copy(fixtures.interventions);
     this.conversations = copy(fixtures.conversations);
     this.messages = copy(fixtures.messages);
+    this.receptionistSettings = copy(fixtures.receptionistSettings);
   }
 
   private assertSalon(salonId: string) {
@@ -802,7 +808,25 @@ export class MockDashboardService implements DashboardService {
 
   async getReceptionistSettings(salonId: string) {
     this.assertSalon(salonId);
-    return copy(this.fixtures.receptionistSettings);
+    return copy(this.receptionistSettings);
+  }
+
+  async updateReceptionistSettings(
+    salonId: string,
+    input: UpdateReceptionistSettingsInput,
+    occurredAt = new Date().toISOString(),
+  ) {
+    this.assertSalon(salonId);
+    const validatedInput = updateReceptionistSettingsInputSchema.parse(input);
+    const nextSettings = receptionistSettingsSchema.parse({
+      ...this.receptionistSettings,
+      ...validatedInput,
+      version: this.receptionistSettings.version + 1,
+      updatedAt: occurredAt,
+    });
+
+    this.receptionistSettings = copy(nextSettings);
+    return copy(nextSettings);
   }
 
   async getOverview(
