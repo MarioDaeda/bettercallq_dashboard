@@ -152,7 +152,11 @@ interface DashboardService {
     salonId: string,
     interventionId: string,
   ): Promise<Intervention>;
-  listCalls(salonId: string, filters: CallFilters): Promise<Call[]>;
+  listCallHistory(
+    salonId: string,
+    query: CallHistoryQuery,
+  ): Promise<CallHistoryPage>;
+  getCall(salonId: string, callId: string): Promise<CallDetail | null>;
   getConversation(
     salonId: string,
     conversationId: string,
@@ -169,6 +173,13 @@ Le mutazioni della Task 6A sono simulate e conservate soltanto nell'istanza
 client del service mock. Coda, navigazione e widget della Panoramica condividono
 lo stesso stato durante la sessione; il ricaricamento della pagina ripristina le
 fixture originali. La persistenza viene introdotta nella Task 8.
+
+La Task 6B espone lo storico chiamate come risultato paginato. Filtri, conteggi
+per esito e riepilogo vengono calcolati dal service sull'intero insieme
+filtrato, prima di applicare la pagina. Il dettaglio aggrega il riferimento
+minimo all'appuntamento e lo stato corrente dell'eventuale intervento, mantenendo
+deep link bidirezionali tra le due sezioni. Il prototipo non richiede né
+riproduce registrazioni audio.
 
 ### 5.4 Repository
 

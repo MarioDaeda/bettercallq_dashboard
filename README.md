@@ -21,11 +21,14 @@ Le fondamenta del prototipo sono complete:
   riapertura;
 - conteggi e urgenze sincronizzati tra coda, navigazione e Panoramica durante la
   sessione demo;
+- storico “Chiamate” con riepilogo, filtri, paginazione, dettaglio, collegamenti
+  a interventi e appuntamenti e trascrizioni espandibili;
+- deep link bidirezionali tra chiamate e richieste “Da gestire”;
 - loading, empty ed error state condivisi.
 
-Le pagine Chiamate, WhatsApp, Impostazioni IA, QR e canali e Monitoraggio
-restano intenzionalmente minimali e verranno completate una alla volta nelle
-task successive.
+Le pagine WhatsApp, Impostazioni IA, QR e canali e Monitoraggio restano
+intenzionalmente minimali e verranno completate una alla volta nelle task
+successive.
 
 ## Stack
 
@@ -69,6 +72,7 @@ src/
 ├── app/                  # route, layout e stati Next.js
 ├── components/
 │   ├── app-shell/        # sidebar, drawer, header e tema
+│   ├── calls/            # storico, filtri, paginazione e dettaglio chiamate
 │   ├── interventions/    # coda, filtri, dettaglio e azioni simulate
 │   ├── overview/         # widget tipizzati della Panoramica
 │   ├── shared/           # intestazioni e stati condivisi
@@ -76,6 +80,7 @@ src/
 └── lib/
     ├── domain/           # schemi Zod e tipi TypeScript
     ├── fixtures/         # soli dati dimostrativi
+    ├── calls/            # etichette, periodi e formattazione chiamate
     ├── interventions/    # etichette e formattazione della coda
     ├── overview/         # filtri e formattazione della Panoramica
     └── services/         # contratto e implementazione mock

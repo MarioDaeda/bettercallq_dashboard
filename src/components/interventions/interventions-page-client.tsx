@@ -94,12 +94,22 @@ const calculateStats = (interventions: Intervention[]): QueueStats => ({
   resolved: interventions.filter((item) => item.status === "resolved").length,
 });
 
-export function InterventionsPageClient() {
-  const [filters, setFilters] = useState<InterventionFilterState>(
-    defaultInterventionFilters,
+interface InterventionsPageClientProps {
+  initialInterventionId?: string;
+}
+
+export function InterventionsPageClient({
+  initialInterventionId,
+}: InterventionsPageClientProps) {
+  const [filters, setFilters] = useState<InterventionFilterState>(() =>
+    initialInterventionId
+      ? { ...defaultInterventionFilters, status: "all" }
+      : defaultInterventionFilters,
   );
   const [interventions, setInterventions] = useState<Intervention[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialInterventionId ?? null,
+  );
   const [selectedDetail, setSelectedDetail] =
     useState<InterventionDetailData | null>(null);
   const [stats, setStats] = useState<QueueStats>(emptyStats);
@@ -114,12 +124,13 @@ export function InterventionsPageClient() {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
 
-  const selectedIdRef = useRef<string | null>(null);
+  const selectedIdRef = useRef<string | null>(initialInterventionId ?? null);
   const queueRequestRef = useRef(0);
   const detailRequestRef = useRef(0);
   const detailDialogRef = useRef<HTMLDialogElement>(null);
   const resolutionDialogRef = useRef<HTMLDialogElement>(null);
   const initialLoadRef = useRef(true);
+  const deepLinkRef = useRef(initialInterventionId);
   const setActiveInterventions = useSetActiveInterventions();
 
   useEffect(() => {
@@ -189,6 +200,15 @@ export function InterventionsPageClient() {
         setActiveInterventions?.(active);
         setLoadState("ready");
         initialLoadRef.current = false;
+
+        if (
+          initialLoad &&
+          deepLinkRef.current === nextSelectedId &&
+          !window.matchMedia("(min-width: 1280px)").matches
+        ) {
+          window.setTimeout(() => detailDialogRef.current?.showModal(), 0);
+        }
+        deepLinkRef.current = undefined;
       } catch {
         if (requestId === queueRequestRef.current) {
           setLoadState("error");

@@ -6,6 +6,23 @@ export const metadata: Metadata = {
   title: "Da gestire",
 };
 
-export default function InterventionsPage() {
-  return <InterventionsPageClient />;
+interface InterventionsPageProps {
+  searchParams: Promise<{
+    intervention?: string | string[];
+  }>;
+}
+
+export default async function InterventionsPage({
+  searchParams,
+}: InterventionsPageProps) {
+  const query = await searchParams;
+  const initialInterventionId = Array.isArray(query.intervention)
+    ? query.intervention[0]
+    : query.intervention;
+
+  return (
+    <InterventionsPageClient
+      initialInterventionId={initialInterventionId}
+    />
+  );
 }

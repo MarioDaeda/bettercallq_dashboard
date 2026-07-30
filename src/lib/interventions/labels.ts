@@ -1,10 +1,11 @@
 import type {
-  CallOutcome,
   InterventionPriority,
   InterventionReason,
   InterventionSource,
   InterventionStatus,
 } from "@/lib/domain";
+
+export { callOutcomeLabels } from "@/lib/calls/labels";
 
 export const interventionPriorityLabels: Record<
   InterventionPriority,
@@ -42,20 +43,9 @@ export const interventionReasonLabels: Record<InterventionReason, string> = {
   other: "Altro",
 };
 
-export const callOutcomeLabels: Record<CallOutcome, string> = {
-  booking_completed: "Prenotazione completata",
-  information_provided: "Informazioni fornite",
-  change_or_cancellation: "Modifica o cancellazione",
-  transferred: "Trasferita",
-  incomplete: "Richiesta incompleta",
-  technical_error: "Errore tecnico",
-  abandoned: "Abbandonata",
-};
-
 export const bookingSyncStatusLabels = {
   pending: "In attesa",
   synced: "Sincronizzata",
   failed: "Sincronizzazione fallita",
   cancelled: "Annullata",
 } as const;
-

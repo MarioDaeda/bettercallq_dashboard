@@ -1,12 +1,13 @@
 import type {
   BookingReference,
   Call,
+  CallOutcome,
   Conversation,
   DailyMetric,
   IntegrationError,
   Intervention,
 } from "@/lib/domain";
-import { interventionSchema } from "@/lib/domain";
+import { callOutcomeSchema, interventionSchema } from "@/lib/domain";
 import {
   PILOT_SALON_ID,
   pilotFixtureSet,
@@ -14,7 +15,12 @@ import {
 } from "@/lib/fixtures/pilot-salon";
 
 import type {
+  CallDetail,
   CallFilters,
+  CallHistoryPage,
+  CallHistoryQuery,
+  CallListItem,
+  CallSummary,
   ConversationDetail,
   DashboardService,
   DateRange,
@@ -95,6 +101,25 @@ const isWithinOptionalLocalDateRange = (
     (to === undefined || localDate <= to)
   );
 };
+
+const DEFAULT_CALL_PAGE_SIZE = 5;
+const MAX_CALL_PAGE_SIZE = 50;
+
+const emptyOutcomeCounts = (): Record<CallOutcome, number> =>
+  Object.fromEntries(
+    callOutcomeSchema.options.map((outcome) => [outcome, 0]),
+  ) as Record<CallOutcome, number>;
+
+const completedAutomaticallyOutcomes: CallOutcome[] = [
+  "booking_completed",
+  "information_provided",
+];
+
+const needsAttentionOutcomes: CallOutcome[] = [
+  "incomplete",
+  "technical_error",
+  "abandoned",
+];
 
 const interventionPriorityOrder: Record<Intervention["priority"], number> = {
   urgent: 0,
@@ -194,6 +219,83 @@ export class MockDashboardService implements DashboardService {
       );
 
     return copy(calls);
+  }
+
+  async listCallHistory(
+    salonId: string,
+    query: CallHistoryQuery = {},
+  ): Promise<CallHistoryPage> {
+    this.assertSalon(salonId);
+    if (
+      query.from !== undefined &&
+      query.to !== undefined &&
+      query.from > query.to
+    ) {
+      throw new RangeError("L'intervallo delle chiamate non è valido.");
+    }
+
+    const requestedPage = query.page ?? 1;
+    const pageSize = query.pageSize ?? DEFAULT_CALL_PAGE_SIZE;
+    if (!Number.isInteger(requestedPage) || requestedPage < 1) {
+      throw new RangeError("La pagina delle chiamate deve essere positiva.");
+    }
+    if (
+      !Number.isInteger(pageSize) ||
+      pageSize < 1 ||
+      pageSize > MAX_CALL_PAGE_SIZE
+    ) {
+      throw new RangeError(
+        `La pagina delle chiamate può contenere da 1 a ${MAX_CALL_PAGE_SIZE} elementi.`,
+      );
+    }
+
+    const calls = this.fixtures.calls
+      .filter((call) => call.salonId === salonId)
+      .filter(
+        (call) =>
+          query.outcomes === undefined ||
+          query.outcomes.includes(call.outcome),
+      )
+      .filter((call) =>
+        isWithinOptionalLocalDateRange(
+          call.startedAt,
+          query.from,
+          query.to,
+          this.fixtures.salon.timezone,
+        ),
+      )
+      .toSorted((left, right) =>
+        right.startedAt.localeCompare(left.startedAt),
+      );
+
+    const totalItems = calls.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const page = Math.min(requestedPage, totalPages);
+    const start = (page - 1) * pageSize;
+    const items = calls
+      .slice(start, start + pageSize)
+      .map((call) => this.toCallListItem(salonId, call));
+
+    return copy({
+      items,
+      page,
+      pageSize,
+      totalItems,
+      totalPages,
+      summary: calculateCallSummary(calls),
+    });
+  }
+
+  async getCall(
+    salonId: string,
+    callId: string,
+  ): Promise<CallDetail | null> {
+    this.assertSalon(salonId);
+    const call = this.fixtures.calls.find(
+      (item) => item.salonId === salonId && item.id === callId,
+    );
+
+    return call ? copy(this.toCallListItem(salonId, call)) : null;
   }
 
   async listInterventions(
@@ -485,6 +587,24 @@ export class MockDashboardService implements DashboardService {
     return intervention;
   }
 
+  private toCallListItem(salonId: string, call: Call): CallListItem {
+    const intervention =
+      this.interventions
+        .filter(
+          (item) => item.salonId === salonId && item.callId === call.id,
+        )
+        .toSorted(sortInterventions)
+        .at(0) ?? null;
+    const bookingReference =
+      this.fixtures.bookingReferences.find(
+        (item) =>
+          item.salonId === salonId &&
+          item.id === call.bookingReferenceId,
+      ) ?? null;
+
+    return { call, intervention, bookingReference };
+  }
+
   private replaceIntervention(intervention: Intervention) {
     const index = this.interventions.findIndex(
       (item) => item.id === intervention.id,
@@ -496,6 +616,31 @@ export class MockDashboardService implements DashboardService {
 
 const sum = <T>(items: T[], select: (item: T) => number) =>
   items.reduce((total, item) => total + select(item), 0);
+
+const calculateCallSummary = (calls: Call[]): CallSummary => {
+  const durations = calls.flatMap((call) =>
+    call.durationSeconds === undefined ? [] : [call.durationSeconds],
+  );
+  const outcomeCounts = calls.reduce((counts, call) => {
+    counts[call.outcome] += 1;
+    return counts;
+  }, emptyOutcomeCounts());
+
+  return {
+    totalCalls: calls.length,
+    averageDurationSeconds:
+      durations.length === 0
+        ? 0
+        : Math.round(sum(durations, (duration) => duration) / durations.length),
+    completedAutomatically: calls.filter((call) =>
+      completedAutomaticallyOutcomes.includes(call.outcome),
+    ).length,
+    needsAttention: calls.filter((call) =>
+      needsAttentionOutcomes.includes(call.outcome),
+    ).length,
+    outcomeCounts,
+  };
+};
 
 const estimateMonthlyCost = (totalCostCents: number, measuredDays: number) =>
   measuredDays === 0

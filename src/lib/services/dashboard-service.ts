@@ -27,6 +27,39 @@ export interface CallFilters {
   to?: string;
 }
 
+export interface CallHistoryQuery {
+  outcomes?: CallOutcome[];
+  from?: string;
+  to?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CallListItem {
+  call: Call;
+  intervention: Intervention | null;
+  bookingReference: BookingReference | null;
+}
+
+export interface CallSummary {
+  totalCalls: number;
+  averageDurationSeconds: number;
+  completedAutomatically: number;
+  needsAttention: number;
+  outcomeCounts: Record<CallOutcome, number>;
+}
+
+export interface CallHistoryPage {
+  items: CallListItem[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  summary: CallSummary;
+}
+
+export type CallDetail = CallListItem;
+
 export interface InterventionFilters {
   statuses?: InterventionStatus[];
   priorities?: InterventionPriority[];
@@ -98,6 +131,11 @@ export interface DashboardService {
   getChannelStatuses(salonId: string): Promise<ChannelStatus[]>;
   getOverview(salonId: string, range: DateRange): Promise<Overview>;
   listCalls(salonId: string, filters?: CallFilters): Promise<Call[]>;
+  listCallHistory(
+    salonId: string,
+    query?: CallHistoryQuery,
+  ): Promise<CallHistoryPage>;
+  getCall(salonId: string, callId: string): Promise<CallDetail | null>;
   listInterventions(
     salonId: string,
     filters?: InterventionFilters,
