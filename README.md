@@ -6,9 +6,19 @@ calendario parallelo.
 
 ## Stato del progetto
 
-La Task 2 prepara soltanto le fondamenta tecniche. Le pagine operative, i dati
-dimostrativi, il database e le integrazioni verranno aggiunti nelle attività
-successive.
+Le fondamenta del prototipo sono complete:
+
+- scaffold Next.js con TypeScript strict;
+- contratti runtime Zod e tipi derivati;
+- fixture fittizie isolate tramite `salonId`;
+- service layer mock;
+- design system chiaro/scuro;
+- app shell responsive;
+- sette sezioni navigabili;
+- loading, empty ed error state condivisi.
+
+Le pagine operative restano intenzionalmente minimali. Verranno completate una
+alla volta nelle task successive, iniziando dalla Panoramica.
 
 ## Stack
 
@@ -20,6 +30,7 @@ successive.
 - Recharts
 - Framer Motion
 - Lucide Icons
+- Vitest
 
 Non sono installati Gemini, Vercel AI SDK o strumenti per generare dashboard da
 prompt.
@@ -40,16 +51,23 @@ Apri [http://localhost:3000](http://localhost:3000).
 
 ```bash
 npm run lint
+npm run test
 npm run build
 ```
 
-## Struttura iniziale
+## Struttura
 
 ```text
 src/
-├── app/                  # App Router, layout e pagine
-├── components/ui/        # componenti shadcn/ui
-└── lib/                  # utilità condivise
+├── app/                  # route, layout e stati Next.js
+├── components/
+│   ├── app-shell/        # sidebar, drawer, header e tema
+│   ├── shared/           # intestazioni e stati condivisi
+│   └── ui/               # primitive UI
+└── lib/
+    ├── domain/           # schemi Zod e tipi TypeScript
+    ├── fixtures/         # soli dati dimostrativi
+    └── services/         # contratto e implementazione mock
 ```
 
 Le specifiche del prodotto e dell’architettura si trovano nella cartella

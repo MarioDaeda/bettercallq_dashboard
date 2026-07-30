@@ -52,6 +52,8 @@ Uscita:
 
 ### Task 2 — Scaffold tecnico
 
+**Stato:** completata
+
 Inizializzare:
 
 - Next.js App Router;
@@ -75,6 +77,8 @@ Uscita:
 
 ### Task 3 — Contratti, schemi e fixture
 
+**Stato:** completata
+
 Implementare:
 
 - tipi TypeScript;
@@ -92,6 +96,8 @@ Uscita:
 - tutti i dati operativi contengono `salonId`.
 
 ### Task 4 — Design system e app shell
+
+**Stato:** completata
 
 Implementare:
 
