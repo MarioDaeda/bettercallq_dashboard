@@ -24,11 +24,14 @@ Le fondamenta del prototipo sono complete:
 - storico “Chiamate” con riepilogo, filtri, paginazione, dettaglio, collegamenti
   a interventi e appuntamenti e trascrizioni espandibili;
 - deep link bidirezionali tra chiamate e richieste “Da gestire”;
+- inbox “WhatsApp” a due pannelli con ricerca, stati completi, cronologia,
+  riferimenti e deep link verso “Da gestire”;
+- presa e rilascio del controllo, invio manuale e completamento simulati con
+  blocco delle risposte IA durante la gestione umana;
 - loading, empty ed error state condivisi.
 
-Le pagine WhatsApp, Impostazioni IA, QR e canali e Monitoraggio restano
-intenzionalmente minimali e verranno completate una alla volta nelle task
-successive.
+Le pagine Impostazioni IA, QR e canali e Monitoraggio restano intenzionalmente
+minimali e verranno completate una alla volta nelle task successive.
 
 ## Stack
 
@@ -76,6 +79,7 @@ src/
 │   ├── interventions/    # coda, filtri, dettaglio e azioni simulate
 │   ├── overview/         # widget tipizzati della Panoramica
 │   ├── shared/           # intestazioni e stati condivisi
+│   ├── whatsapp/         # inbox, messaggi, controllo e invio simulato
 │   └── ui/               # primitive UI
 └── lib/
     ├── domain/           # schemi Zod e tipi TypeScript
@@ -83,6 +87,7 @@ src/
     ├── calls/            # etichette, periodi e formattazione chiamate
     ├── interventions/    # etichette e formattazione della coda
     ├── overview/         # filtri e formattazione della Panoramica
+    ├── whatsapp/         # etichette e formattazione conversazioni
     └── services/         # contratto e implementazione mock
 ```
 

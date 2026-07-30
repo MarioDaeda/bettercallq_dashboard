@@ -157,10 +157,31 @@ interface DashboardService {
     query: CallHistoryQuery,
   ): Promise<CallHistoryPage>;
   getCall(salonId: string, callId: string): Promise<CallDetail | null>;
+  listConversationInbox(
+    salonId: string,
+    filters: ConversationFilters,
+  ): Promise<ConversationInbox>;
   getConversation(
     salonId: string,
     conversationId: string,
   ): Promise<ConversationDetail | null>;
+  takeConversationControl(
+    salonId: string,
+    conversationId: string,
+  ): Promise<Conversation>;
+  sendManualMessage(
+    salonId: string,
+    conversationId: string,
+    input: SendManualMessageInput,
+  ): Promise<Message>;
+  releaseConversationControl(
+    salonId: string,
+    conversationId: string,
+  ): Promise<Conversation>;
+  completeConversation(
+    salonId: string,
+    conversationId: string,
+  ): Promise<Conversation>;
   getReceptionistSettings(salonId: string): Promise<ReceptionistSettings>;
 }
 ```
@@ -180,6 +201,14 @@ filtrato, prima di applicare la pagina. Il dettaglio aggrega il riferimento
 minimo all'appuntamento e lo stato corrente dell'eventuale intervento, mantenendo
 deep link bidirezionali tra le due sezioni. Il prototipo non richiede né
 riproduce registrazioni audio.
+
+La Task 6C mantiene conversazioni, messaggi e controllo nell'istanza client del
+service mock. La presa di controllo aggiorna in modo coerente conversazione ed
+eventuale intervento; soltanto il controllo umano abilita l'invio manuale. Il
+rilascio riattiva l'IA e il completamento chiude il thread, risolvendo
+l'eventuale intervento attivo. Il dettaglio aggrega ultimo stato, messaggi,
+appuntamento e richiesta collegata. Nessuna mutazione chiama Meta e il
+ricaricamento ripristina le fixture.
 
 ### 5.4 Repository
 
