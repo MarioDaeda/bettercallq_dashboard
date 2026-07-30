@@ -155,6 +155,8 @@ Uscita:
 
 ### Task 6B — Chiamate
 
+**Stato:** completata
+
 Implementare:
 
 - elenco e paginazione;

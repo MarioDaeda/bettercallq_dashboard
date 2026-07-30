@@ -107,6 +107,18 @@ const calls = z.array(callSchema).parse([
     durationSeconds: 48,
     outcome: "information_provided",
     summary: "Sono stati comunicati gli orari dimostrativi del salone.",
+    transcript: [
+      {
+        speaker: "customer",
+        text: "Fino a che ora siete aperti oggi?",
+        startedAtSeconds: 3,
+      },
+      {
+        speaker: "assistant",
+        text: "Oggi il salone demo è aperto fino alle diciannove.",
+        startedAtSeconds: 7,
+      },
+    ],
     processingStatus: "processed",
     createdAt: "2026-07-30T07:45:00.000Z",
     updatedAt: "2026-07-30T07:45:48.000Z",
@@ -156,6 +168,23 @@ const calls = z.array(callSchema).parse([
     outcome: "incomplete",
     summary: "Mancano data e fascia oraria per completare la richiesta.",
     requestedService: "Piega demo",
+    transcript: [
+      {
+        speaker: "customer",
+        text: "Vorrei fissare una piega.",
+        startedAtSeconds: 5,
+      },
+      {
+        speaker: "assistant",
+        text: "Certo. Per quale giorno e fascia oraria preferisci prenotare?",
+        startedAtSeconds: 10,
+      },
+      {
+        speaker: "system",
+        text: "La chiamata è terminata prima della risposta del cliente.",
+        startedAtSeconds: 53,
+      },
+    ],
     processingStatus: "processed",
     createdAt: "2026-07-30T09:42:00.000Z",
     updatedAt: "2026-07-30T09:42:55.000Z",
@@ -174,6 +203,23 @@ const calls = z.array(callSchema).parse([
     summary: "La sincronizzazione dimostrativa dell'appuntamento non è riuscita.",
     requestedService: "Colore demo",
     bookingReferenceId: bookingReferences[1].id,
+    transcript: [
+      {
+        speaker: "customer",
+        text: "Vorrei prenotare un colore per domani.",
+        startedAtSeconds: 6,
+      },
+      {
+        speaker: "assistant",
+        text: "Ho raccolto la richiesta, ma non riesco a confermare l'appuntamento.",
+        startedAtSeconds: 46,
+      },
+      {
+        speaker: "system",
+        text: "Sincronizzazione demo non riuscita: verifica richiesta.",
+        startedAtSeconds: 66,
+      },
+    ],
     processingStatus: "failed",
     createdAt: "2026-07-30T10:30:00.000Z",
     updatedAt: "2026-07-30T10:34:00.000Z",

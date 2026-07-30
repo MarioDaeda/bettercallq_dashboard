@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 
-import { SectionPlaceholder } from "@/components/shared/section-placeholder";
+import { CallsPageClient } from "@/components/calls/calls-page-client";
 
 export const metadata: Metadata = {
   title: "Chiamate",
 };
 
-export default function CallsPage() {
-  return (
-    <SectionPlaceholder
-      description="Rivedi esito, durata e sintesi delle chiamate gestite dalla receptionist senza dover consultare log tecnici."
-      nextTask="La Task 6B"
-      title="Ogni chiamata raccontata in modo semplice."
-    />
-  );
+interface CallsPageProps {
+  searchParams: Promise<{
+    call?: string | string[];
+  }>;
+}
+
+export default async function CallsPage({ searchParams }: CallsPageProps) {
+  const query = await searchParams;
+  const initialCallId = Array.isArray(query.call) ? query.call[0] : query.call;
+
+  return <CallsPageClient initialCallId={initialCallId} />;
 }

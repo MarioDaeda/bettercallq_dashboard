@@ -146,6 +146,123 @@ describe("MockDashboardService", () => {
     ]);
   });
 
+  it("pagina lo storico chiamate e calcola il riepilogo sui risultati filtrati", async () => {
+    const history = await service.listCallHistory(PILOT_SALON_ID, {
+      page: 1,
+      pageSize: 3,
+    });
+
+    expect(history).toMatchObject({
+      page: 1,
+      pageSize: 3,
+      totalItems: 7,
+      totalPages: 3,
+      summary: {
+        totalCalls: 7,
+        averageDurationSeconds: 59,
+        completedAutomatically: 2,
+        needsAttention: 3,
+      },
+    });
+    expect(history.items.map((item) => item.call.externalCallId)).toEqual([
+      "demo-call-abandoned",
+      "demo-call-error",
+      "demo-call-incomplete",
+    ]);
+    expect(history.summary.outcomeCounts).toEqual({
+      booking_completed: 1,
+      information_provided: 1,
+      change_or_cancellation: 1,
+      transferred: 1,
+      incomplete: 1,
+      technical_error: 1,
+      abandoned: 1,
+    });
+  });
+
+  it("filtra lo storico per data locale ed esito prima della paginazione", async () => {
+    const history = await service.listCallHistory(PILOT_SALON_ID, {
+      outcomes: ["technical_error"],
+      from: "2026-07-30",
+      to: "2026-07-30",
+      pageSize: 1,
+    });
+
+    expect(history).toMatchObject({
+      totalItems: 1,
+      totalPages: 1,
+      summary: {
+        totalCalls: 1,
+        completedAutomatically: 0,
+        needsAttention: 1,
+      },
+    });
+    expect(history.items[0]).toMatchObject({
+      call: { externalCallId: "demo-call-error" },
+      intervention: {
+        reason: "booking_sync_failed",
+        status: "open",
+      },
+      bookingReference: { syncStatus: "failed" },
+    });
+  });
+
+  it("restituisce il dettaglio della chiamata con i riferimenti correlati", async () => {
+    const detail = await service.getCall(
+      PILOT_SALON_ID,
+      pilotFixtureSet.calls[3].id,
+    );
+
+    expect(detail).toMatchObject({
+      call: { outcome: "transferred" },
+      intervention: {
+        reason: "human_requested",
+        status: "resolved",
+      },
+      bookingReference: null,
+    });
+    await expect(
+      service.getCall(
+        PILOT_SALON_ID,
+        "20000000-0000-4000-8000-000000000099",
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it("riflette nel dettaglio chiamata lo stato corrente dell'intervento", async () => {
+    const intervention = pilotFixtureSet.interventions[1];
+
+    await service.resolveIntervention(PILOT_SALON_ID, intervention.id, {
+      resolutionNote: "Prenotazione verificata nella simulazione.",
+      occurredAt: "2026-07-30T11:58:00.000Z",
+    });
+    const detail = await service.getCall(
+      PILOT_SALON_ID,
+      pilotFixtureSet.calls[5].id,
+    );
+
+    expect(detail?.intervention).toMatchObject({
+      id: intervention.id,
+      status: "resolved",
+      resolutionNote: "Prenotazione verificata nella simulazione.",
+    });
+  });
+
+  it("valida intervallo e parametri di paginazione delle chiamate", async () => {
+    await expect(
+      service.listCallHistory(PILOT_SALON_ID, {
+        from: "2026-07-31",
+        to: "2026-07-30",
+      }),
+    ).rejects.toBeInstanceOf(RangeError);
+    await expect(
+      service.listCallHistory(PILOT_SALON_ID, { page: 0 }),
+    ).rejects.toBeInstanceOf(RangeError);
+    await expect(
+      service.listCallHistory(PILOT_SALON_ID, { pageSize: 51 }),
+    ).rejects.toBeInstanceOf(RangeError);
+  });
+
   it("filtra gli interventi per stato e priorità", async () => {
     const interventions = await service.listInterventions(PILOT_SALON_ID, {
       statuses: ["open"],
