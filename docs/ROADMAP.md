@@ -214,6 +214,8 @@ Uscita:
 
 ### Task 7B — QR e canali
 
+**Stato:** completata
+
 Implementare:
 
 - numeri e stati;

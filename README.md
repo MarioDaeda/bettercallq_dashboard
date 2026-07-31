@@ -32,10 +32,13 @@ Le fondamenta del prototipo sono complete:
   chiusure, FAQ, politiche, tono, regole di prenotazione ed escalation;
 - validazione Zod, versionamento nel service mock e protezione delle modifiche
   non salvate, senza aggiornamento automatico di Vapi;
+- “QR e canali” completa con numeri, stato connessioni, link `wa.me`,
+  messaggio precompilato, anteprima e download QR in PNG e SVG;
+- generazione QR locale dal solo numero e testo configurati, senza token Meta;
 - loading, empty ed error state condivisi.
 
-Le pagine QR e canali e Monitoraggio restano intenzionalmente minimali e
-verranno completate una alla volta nelle task successive.
+La pagina Monitoraggio resta intenzionalmente minimale e verrà completata
+nella Task 7C.
 
 ## Stack
 
@@ -80,6 +83,7 @@ src/
 ├── components/
 │   ├── app-shell/        # sidebar, drawer, header e tema
 │   ├── calls/            # storico, filtri, paginazione e dettaglio chiamate
+│   ├── channels/         # stato canali, link WhatsApp e download QR
 │   ├── interventions/    # coda, filtri, dettaglio e azioni simulate
 │   ├── overview/         # widget tipizzati della Panoramica
 │   ├── settings/         # moduli strutturati delle Impostazioni IA
@@ -90,6 +94,7 @@ src/
     ├── domain/           # schemi Zod e tipi TypeScript
     ├── fixtures/         # soli dati dimostrativi
     ├── calls/            # etichette, periodi e formattazione chiamate
+    ├── channels/         # validazione e costruzione link WhatsApp
     ├── interventions/    # etichette e formattazione della coda
     ├── overview/         # filtri e formattazione della Panoramica
     ├── settings/         # sezioni, helper e validazione del form

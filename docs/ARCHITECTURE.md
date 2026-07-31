@@ -224,6 +224,12 @@ service, segnala la sezione da correggere e protegge le modifiche non salvate.
 Il ricaricamento ripristina la fixture originale fino alla persistenza della
 Task 8.
 
+La Task 7B legge numero del salone e stato dei canali attraverso il service
+mock. Numero WhatsApp e messaggio precompilato restano nello stato locale
+della pagina; il link `wa.me` viene validato e costruito deterministicamente.
+PNG e SVG sono generati nel browser dalla stessa stringa, senza token Meta,
+endpoint BetterCallQ o servizi QR esterni.
+
 ### 5.4 Repository
 
 Contengono l'accesso ai dati persistenti e applicano sempre il filtro `salonId`.
