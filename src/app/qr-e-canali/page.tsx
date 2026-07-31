@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 
-import { SectionPlaceholder } from "@/components/shared/section-placeholder";
+import { ChannelsPageClient } from "@/components/channels/channels-page-client";
+import {
+  dashboardService,
+  PILOT_SALON_ID,
+} from "@/lib/services/mock-dashboard-service";
 
 export const metadata: Metadata = {
   title: "QR e canali",
 };
 
-export default function ChannelsPage() {
-  return (
-    <SectionPlaceholder
-      description="Trova numeri, stato delle connessioni e strumenti per rendere il contatto WhatsApp immediato."
-      nextTask="La Task 7B"
-      title="Tutti i canali BetterCallQ, pronti da condividere."
-    />
-  );
+export default async function ChannelsPage() {
+  const [salon, channels] = await Promise.all([
+    dashboardService.getSalon(PILOT_SALON_ID),
+    dashboardService.getChannelStatuses(PILOT_SALON_ID),
+  ]);
+
+  return <ChannelsPageClient channels={channels} salon={salon} />;
 }
