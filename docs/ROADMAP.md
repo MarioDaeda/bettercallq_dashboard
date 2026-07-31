@@ -232,6 +232,8 @@ Uscita:
 
 ### Task 7C — Monitoraggio
 
+**Stato:** completata
+
 Implementare:
 
 - volumi;
@@ -247,6 +249,9 @@ Uscita:
 - formule centralizzate;
 - unità e periodo sempre visibili;
 - nessun dato inventato fuori dalle fixture.
+
+**Milestone M1:** completata. Tutte le sezioni frontend sono navigabili e
+alimentate tramite fixture isolate dal service layer.
 
 ### Gate T — Verifica Treatwell
 

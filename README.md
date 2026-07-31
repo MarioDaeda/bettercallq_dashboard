@@ -35,10 +35,13 @@ Le fondamenta del prototipo sono complete:
 - “QR e canali” completa con numeri, stato connessioni, link `wa.me`,
   messaggio precompilato, anteprima e download QR in PNG e SVG;
 - generazione QR locale dal solo numero e testo configurati, senza token Meta;
+- “Monitoraggio” completo con volumi, durata, completamento, interventi,
+  diagnostica, costo stimato e confronto tra periodi equivalenti;
+- formule economiche centralizzate e fixture giornaliere estese a 14 giorni;
 - loading, empty ed error state condivisi.
 
-La pagina Monitoraggio resta intenzionalmente minimale e verrà completata
-nella Task 7C.
+La milestone M1 del frontend con fixture è completa. Autenticazione e
+persistenza iniziano nella Task 8.
 
 ## Stack
 
@@ -85,6 +88,7 @@ src/
 │   ├── calls/            # storico, filtri, paginazione e dettaglio chiamate
 │   ├── channels/         # stato canali, link WhatsApp e download QR
 │   ├── interventions/    # coda, filtri, dettaglio e azioni simulate
+│   ├── monitoring/       # KPI, confronti, costi e diagnostica
 │   ├── overview/         # widget tipizzati della Panoramica
 │   ├── settings/         # moduli strutturati delle Impostazioni IA
 │   ├── shared/           # intestazioni e stati condivisi
@@ -96,6 +100,7 @@ src/
     ├── calls/            # etichette, periodi e formattazione chiamate
     ├── channels/         # validazione e costruzione link WhatsApp
     ├── interventions/    # etichette e formattazione della coda
+    ├── monitoring/       # periodi, aggregazioni, confronti e stime
     ├── overview/         # filtri e formattazione della Panoramica
     ├── settings/         # sezioni, helper e validazione del form
     ├── whatsapp/         # etichette e formattazione conversazioni
