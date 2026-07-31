@@ -230,6 +230,14 @@ della pagina; il link `wa.me` viene validato e costruito deterministicamente.
 PNG e SVG sono generati nel browser dalla stessa stringa, senza token Meta,
 endpoint BetterCallQ o servizi QR esterni.
 
+La Task 7C legge due intervalli equivalenti tramite `getOverview` e aggrega le
+`DailyMetric` in helper puri e testati. Volumi, percentuali, durata, proiezione
+mensile e variazioni non vengono calcolati nei componenti. La ripartizione dei
+costi usa tariffe esclusivamente dimostrative centralizzate; il totale giornaliero
+resta quello dichiarato nelle fixture e telefonia/piattaforma assorbono il
+residuo. Le fixture coprono quattordici giorni per permettere il confronto tra
+settimane senza introdurre dati esterni.
+
 ### 5.4 Repository
 
 Contengono l'accesso ai dati persistenti e applicano sempre il filtro `salonId`.
