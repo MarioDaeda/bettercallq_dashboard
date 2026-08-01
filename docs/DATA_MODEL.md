@@ -613,3 +613,16 @@ vengono validati ai confini del sistema.
 - dettagli necessari per attribuire una prenotazione a BetterCallQ;
 - formula definitiva dei costi;
 - necessità di conservare lo storico delle versioni delle impostazioni.
+
+## 9. Decisione Task 8A — identità e membership
+
+Il modello definitivo distingue il ruolo di piattaforma dalla membership del
+salone:
+
+- `Profile.platformRole = admin | null`;
+- `SalonMembership.membershipRole = salon_owner`;
+- una membership collega esplicitamente utente e `salonId`;
+- `AuditEvent.actorUserId` registra l'attore delle modifiche sensibili.
+
+Per il pilota non vengono introdotti ruoli `manager`, `viewer` o `support`.
+L'eventuale estensione avverrà soltanto dopo aver osservato esigenze reali.

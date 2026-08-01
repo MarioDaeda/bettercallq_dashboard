@@ -485,3 +485,14 @@ prima del pilota con dati reali.
 - retention definitiva;
 - ruoli utente;
 - hosting della dashboard.
+
+## 15. Fondazione RBAC della Task 8A
+
+Ruoli, permessi e navigazione sono definiti in moduli centrali e indipendenti
+dal provider di autenticazione. La shell continua temporaneamente a usare
+`admin` come ruolo dimostrativo, così il prototipo esistente non cambia
+comportamento prima dell'introduzione delle sessioni.
+
+La Task 8B risolverà il ruolo dalla sessione. La Task 8C applicherà controlli
+server-side su route, service, repository e `salonId`. Il filtraggio della
+navigazione non è un confine di sicurezza.
