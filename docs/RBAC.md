@@ -116,3 +116,19 @@ Per il pilota:
 - audit persistente.
 
 Queste decisioni appartengono alle Task 8B e 8C.
+
+## 7. Implementazione Task 8B
+
+Il provider scelto è Supabase Auth. La sessione è risolta lato server e la shell
+riceve un `AppIdentity` con:
+
+- `userId`;
+- email;
+- nome visualizzato;
+- ruolo;
+- `salonId` opzionale per gli admin e obbligatorio per `salon_owner`.
+
+Gli account senza `app_role`, o i proprietari senza `salon_id`, vengono
+indirizzati a una pagina di accesso non configurato. La presenza della sessione
+non equivale ancora all'autorizzazione sui dati: la Task 8C dovrà verificare
+membership, permesso e `salonId` in ogni operazione server-side.

@@ -476,3 +476,27 @@ Uscita:
 - il proprietario dispone di quattro sole sezioni;
 - nessun controllo UI viene considerato sicurezza;
 - login, sessioni e autorizzazione server-side restano nelle Task 8B e 8C.
+
+### Task 8B — Autenticazione e sessione
+
+**Stato:** completata
+
+Implementare:
+
+- Supabase Auth con email e password;
+- sessione SSR in cookie tramite `@supabase/ssr`;
+- rinnovo sessione nel `proxy.ts` di Next.js 16;
+- route pubblica `/accedi`;
+- callback PKCE;
+- logout;
+- risoluzione di ruolo e salone da `app_metadata`;
+- shell e navigazione alimentate dalla sessione;
+- blocco degli account autenticati ma non configurati.
+
+Uscita:
+
+- nessuna dashboard privata senza sessione;
+- nessuna registrazione pubblica;
+- nessun ruolo letto da `user_metadata`;
+- nessuna chiave `service_role` nel frontend;
+- persistenza applicativa e RLS rinviate alla Task 8C.

@@ -5,14 +5,17 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
+import type { AppRole } from "@/lib/auth/permissions";
 
 import { Brand } from "./brand";
 import { NavigationList } from "./navigation-list";
 
 export function MobileNavigation({
   attentionCount,
+  role,
 }: {
   attentionCount: number;
+  role: AppRole;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const pathname = usePathname();
@@ -65,18 +68,21 @@ export function MobileNavigation({
 
           <div className="mt-8 min-h-0 flex-1 overflow-y-auto pr-1">
             <p className="mb-2 px-3 text-[0.68rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
-              Il tuo salone
+              {role === "admin" ? "Console BetterCallQ" : "Il tuo salone"}
             </p>
             <NavigationList
               attentionCount={attentionCount}
               onNavigate={close}
+              role={role}
             />
           </div>
 
           <div className="mt-4 shrink-0 rounded-2xl border bg-muted/50 p-4">
-            <p className="text-sm font-semibold">Modalità dimostrativa</p>
+            <p className="text-sm font-semibold">
+              {role === "admin" ? "Amministratore" : "Proprietario salone"}
+            </p>
             <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-              Le integrazioni restano simulate fino alle rispettive task.
+              Le sezioni disponibili dipendono dal ruolo della sessione.
             </p>
           </div>
         </div>

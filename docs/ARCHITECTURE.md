@@ -496,3 +496,18 @@ comportamento prima dell'introduzione delle sessioni.
 La Task 8B risolverà il ruolo dalla sessione. La Task 8C applicherà controlli
 server-side su route, service, repository e `salonId`. Il filtraggio della
 navigazione non è un confine di sicurezza.
+
+## 16. Autenticazione e sessione della Task 8B
+
+Supabase Auth gestisce identità e credenziali. `@supabase/ssr` conserva access
+token e refresh token in cookie disponibili a Server Component, Server Action e
+Route Handler. `src/proxy.ts` rinnova la sessione e applica soltanto il redirect
+ottimistico; le verifiche definitive restano nei confini server-side.
+
+Il layout pubblico contiene login e callback. Il route group `(dashboard)`
+risolve la sessione prima di caricare la shell e passa il ruolo ai componenti di
+navigazione. Ruolo e `salonId` provengono temporaneamente da `app_metadata`,
+che l'utente non può modificare dal client.
+
+La Task 8C sostituirà il collegamento temporaneo con profili e membership
+persistenti, repository reali e Row Level Security.
