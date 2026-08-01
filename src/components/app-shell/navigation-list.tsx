@@ -3,6 +3,7 @@
 import {
   Activity,
   Bot,
+  Building2,
   LayoutDashboard,
   ListChecks,
   MessageCircle,
@@ -15,8 +16,9 @@ import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { useInterventionAttentionCount } from "@/components/interventions/intervention-session-context";
+import type { AppRole } from "@/lib/auth/permissions";
 import {
-  appNavigation,
+  getNavigationForRole,
   type NavigationIcon,
 } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -27,6 +29,7 @@ const icons: Record<NavigationIcon, LucideIcon> = {
   whatsapp: MessageCircle,
   calls: Phone,
   settings: Bot,
+  salon: Building2,
   channels: QrCode,
   monitoring: Activity,
 };
@@ -34,19 +37,22 @@ const icons: Record<NavigationIcon, LucideIcon> = {
 interface NavigationListProps {
   attentionCount: number;
   onNavigate?: () => void;
+  role?: AppRole;
 }
 
 export function NavigationList({
   attentionCount,
   onNavigate,
+  role = "admin",
 }: NavigationListProps) {
   const pathname = usePathname();
   const currentAttentionCount =
     useInterventionAttentionCount(attentionCount);
+  const navigation = getNavigationForRole(role);
 
   return (
     <nav aria-label="Navigazione principale" className="flex flex-col gap-1.5">
-      {appNavigation.map((item) => {
+      {navigation.map((item) => {
         const Icon = icons[item.icon];
         const isActive =
           item.href === "/"

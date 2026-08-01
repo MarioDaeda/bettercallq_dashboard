@@ -350,3 +350,16 @@ Il prototipo è completo quando:
 - nessun componente dipende da Gemini o da dati generati dall'IA;
 - lint, test pertinenti e build terminano correttamente.
 
+## 14. Decisione Task 8A — Ruoli e interfacce
+
+Il pilota adotta due ruoli:
+
+- `admin`, riservato agli operatori BetterCallQ;
+- `salon_owner`, riservato al proprietario o responsabile del salone.
+
+Il proprietario vede soltanto Panoramica, Da gestire, Chiamate e Dati del
+salone. WhatsApp operativo, Impostazioni IA avanzate, QR e canali, monitoraggio
+tecnico, diagnostica e gestione utenti rimangono nel perimetro admin.
+
+La Task 8A definisce i contratti. L'autorizzazione effettiva deve essere
+applicata lato server nelle Task 8B e 8C.

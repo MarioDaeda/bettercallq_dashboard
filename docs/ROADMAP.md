@@ -456,3 +456,23 @@ Non entrano nell'MVP:
 - suggerimenti IA sui problemi ricorrenti;
 - generazione di report periodici;
 - gestione autonoma di più sedi.
+
+### Task 8A — Fondazione ruoli e permessi
+
+**Stato:** completata
+
+Implementare:
+
+- ruoli `admin` e `salon_owner`;
+- catalogo e matrice centralizzata dei permessi;
+- navigazione distinta per amministratore e proprietario;
+- route iniziale “Dati del salone”;
+- test dei contratti RBAC;
+- modello dati previsto per profili, membership e audit.
+
+Uscita:
+
+- l'interfaccia attuale resta in modalità admin fino alla Task 8B;
+- il proprietario dispone di quattro sole sezioni;
+- nessun controllo UI viene considerato sicurezza;
+- login, sessioni e autorizzazione server-side restano nelle Task 8B e 8C.
