@@ -30,17 +30,29 @@ select has_function(
   'current_user_plan_ids esiste'
 );
 
-select is_definer(
-  'private',
-  'is_platform_admin',
-  array[]::text[],
+select ok(
+  (
+    select pg_proc.prosecdef
+    from pg_proc
+    join pg_namespace
+      on pg_namespace.oid = pg_proc.pronamespace
+    where pg_namespace.nspname = 'private'
+      and pg_proc.proname = 'is_platform_admin'
+      and pg_proc.pronargs = 0
+  ),
   'is_platform_admin è security definer'
 );
 
-select is_definer(
-  'private',
-  'current_user_salon_ids',
-  array[]::text[],
+select ok(
+  (
+    select pg_proc.prosecdef
+    from pg_proc
+    join pg_namespace
+      on pg_namespace.oid = pg_proc.pronamespace
+    where pg_namespace.nspname = 'private'
+      and pg_proc.proname = 'current_user_salon_ids'
+      and pg_proc.pronargs = 0
+  ),
   'current_user_salon_ids è security definer'
 );
 
@@ -157,19 +169,58 @@ select ok(
   'client_calls rispetta RLS delle tabelle sottostanti'
 );
 
-insert into auth.users (id, email)
+insert into auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at
+)
 values
   (
+    '00000000-0000-0000-0000-000000000000',
     '91000000-0000-4000-8000-000000000001',
-    'admin-rls@example.com'
+    'authenticated',
+    'authenticated',
+    'admin-rls@example.com',
+    '',
+    now(),
+    '{}'::jsonb,
+    '{}'::jsonb,
+    now(),
+    now()
   ),
   (
+    '00000000-0000-0000-0000-000000000000',
     '91000000-0000-4000-8000-000000000002',
-    'owner-a@example.com'
+    'authenticated',
+    'authenticated',
+    'owner-a@example.com',
+    '',
+    now(),
+    '{}'::jsonb,
+    '{}'::jsonb,
+    now(),
+    now()
   ),
   (
+    '00000000-0000-0000-0000-000000000000',
     '91000000-0000-4000-8000-000000000003',
-    'owner-b@example.com'
+    'authenticated',
+    'authenticated',
+    'owner-b@example.com',
+    '',
+    now(),
+    '{}'::jsonb,
+    '{}'::jsonb,
+    now(),
+    now()
   );
 
 update public.profiles
@@ -366,6 +417,9 @@ select set_config(
   true
 );
 
+select set_config('request.jwt.claim.sub', '91000000-0000-4000-8000-000000000002', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
 select results_eq(
   'select count(*)::bigint from public.client_salons',
   'values (1::bigint)',
@@ -413,6 +467,9 @@ select set_config(
   true
 );
 
+select set_config('request.jwt.claim.sub', '91000000-0000-4000-8000-000000000003', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
 select results_eq(
   'select customer_phone from public.client_calls',
   $$ values ('+393332222222'::text) $$,
@@ -429,6 +486,9 @@ select set_config(
   )::text,
   true
 );
+
+select set_config('request.jwt.claim.sub', '91000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
 
 select results_eq(
   'select count(*)::bigint from public.client_calls',

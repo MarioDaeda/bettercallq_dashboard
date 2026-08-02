@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(16);
 
 select has_table('public', 'profiles', 'profiles esiste');
 select has_table('public', 'salons', 'salons esiste');
@@ -92,31 +92,6 @@ select ok(
       )
   ),
   'RLS è abilitata su tutte le tabelle applicative'
-);
-
-select is(
-  (
-    select count(*)
-    from pg_policies
-    where schemaname = 'public'
-      and tablename = any(
-        array[
-          'profiles',
-          'salons',
-          'salon_memberships',
-          'subscription_plans',
-          'salon_subscriptions',
-          'usage_periods',
-          'calls',
-          'whatsapp_conversations',
-          'whatsapp_messages',
-          'channel_statuses',
-          'audit_events'
-        ]
-      )
-  ),
-  0::bigint,
-  'La fondazione non apre ancora policy applicative'
 );
 
 select * from finish();
