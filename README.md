@@ -129,3 +129,12 @@ abilitata, ma il frontend resta sulle fixture finché non vengono introdotte le
 policy di isolamento e i repository reali.
 
 La procedura è descritta in `docs/SUPABASE_DATABASE_SETUP.md`.
+
+## Identità persistente
+
+Profili e membership diventano la fonte primaria per ruolo e `salonId`.
+L'applicazione usa una RPC vincolata a `auth.uid()` e mantiene temporaneamente
+gli `app_metadata` come fallback di migrazione.
+
+Il bootstrap del pilota è documentato in
+`docs/SUPABASE_IDENTITY_SETUP.md`.

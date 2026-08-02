@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "supabase:bootstrap-pilot": "node scripts/bootstrap-pilot-access.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.3.3",
