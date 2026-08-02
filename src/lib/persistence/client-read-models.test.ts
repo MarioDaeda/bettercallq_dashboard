@@ -20,6 +20,14 @@ describe("client-safe read models", () => {
     started_at: timestamp,
     ended_at: "2026-08-02T10:01:30.000Z",
     duration_seconds: 90,
+    cost_total_usd_micros: 128_200,
+    cost_stt_usd_micros: 13_300,
+    cost_llm_usd_micros: 35_900,
+    cost_tts_usd_micros: 13_400,
+    cost_vapi_usd_micros: 65_600,
+    cost_transport_usd_micros: 0,
+    cost_chat_usd_micros: 0,
+    cost_knowledge_base_usd_micros: 0,
     outcome: "booking_completed",
     summary: "Appuntamento fissato",
     requested_service: "Taglio",
@@ -32,6 +40,13 @@ describe("client-safe read models", () => {
     expect(
       clientCallRowSchema.parse(call).customer_phone,
     ).toBe("+393331234567");
+  });
+
+  it("espone totale e breakdown Vapi in microdollari", () => {
+    const parsed = clientCallRowSchema.parse(call);
+
+    expect(parsed.cost_total_usd_micros).toBe(128_200);
+    expect(parsed.cost_vapi_usd_micros).toBe(65_600);
   });
 
   it("rifiuta transcript e recording nella superficie cliente", () => {

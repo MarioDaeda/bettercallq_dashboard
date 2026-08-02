@@ -155,8 +155,8 @@ export interface Overview {
   callsReceived: number;
   bookingsAttributed: number;
   openInterventions: number;
-  estimatedCostCents: number;
-  estimatedMonthlyCostCents: number;
+  costTotalUsdMicros: number;
+  projectedMonthlyCostUsdMicros: number;
   urgentInterventions: Intervention[];
   recentCalls: Call[];
   recentActivities: OverviewActivity[];

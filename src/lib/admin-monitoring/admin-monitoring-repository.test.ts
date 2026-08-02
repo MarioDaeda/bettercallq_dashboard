@@ -16,6 +16,14 @@ function createRows() {
         customer_name: "Mario Test",
         customer_phone: null,
         duration_seconds: 90,
+        cost_total_usd_micros: 128_200,
+        cost_stt_usd_micros: 13_300,
+        cost_llm_usd_micros: 35_900,
+        cost_tts_usd_micros: 13_400,
+        cost_vapi_usd_micros: 65_600,
+        cost_transport_usd_micros: 0,
+        cost_chat_usd_micros: 0,
+        cost_knowledge_base_usd_micros: 0,
         ended_at: "2026-08-02T10:01:30.000Z",
         id: "50000000-0000-4000-8000-000000000001",
         outcome: "booking_completed",
@@ -31,6 +39,14 @@ function createRows() {
         customer_name: null,
         customer_phone: null,
         duration_seconds: 30,
+        cost_total_usd_micros: null,
+        cost_stt_usd_micros: null,
+        cost_llm_usd_micros: null,
+        cost_tts_usd_micros: null,
+        cost_vapi_usd_micros: null,
+        cost_transport_usd_micros: null,
+        cost_chat_usd_micros: null,
+        cost_knowledge_base_usd_micros: null,
         ended_at: "2026-08-01T10:00:30.000Z",
         id: "50000000-0000-4000-8000-000000000002",
         outcome: "technical_error",
@@ -87,7 +103,7 @@ function createRows() {
 }
 
 describe("admin monitoring repository", () => {
-  it("aggrega chiamate reali senza usare fixture", () => {
+  it("aggrega costi Vapi reali e separa le chiamate storiche", () => {
     const data = buildAdminMonitoringPageData(
       salonId,
       "7d",
@@ -105,7 +121,10 @@ describe("admin monitoring repository", () => {
           metric.callsCompleted,
         cost:
           result.cost +
-          metric.estimatedCostCents,
+          metric.costTotalUsdMicros,
+        costed:
+          result.costed +
+          metric.callsWithCostData,
         duration:
           result.duration +
           metric.callDurationSeconds,
@@ -124,6 +143,7 @@ describe("admin monitoring repository", () => {
         calls: 0,
         completed: 0,
         cost: 0,
+        costed: 0,
         duration: 0,
         errors: 0,
         interventions: 0,
@@ -137,12 +157,14 @@ describe("admin monitoring repository", () => {
       bookings: 1,
       calls: 2,
       completed: 1,
-      cost: 8,
+      cost: 128_200,
+      costed: 1,
       duration: 120,
       errors: 2,
       interventions: 1,
       whatsapp: 1,
     });
+    expect(data.current.costTotalUsdMicros).toBe(128_200);
     expect(data.current.recentErrors).toHaveLength(2);
     expect(data.current.openInterventions).toBe(1);
     expect(

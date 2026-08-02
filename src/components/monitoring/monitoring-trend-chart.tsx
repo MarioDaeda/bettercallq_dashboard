@@ -12,6 +12,7 @@ import {
 } from "recharts";
 
 import type { DailyMetric } from "@/lib/domain";
+import { formatUsdMicros } from "@/lib/overview/formatters";
 
 interface MonitoringTrendChartProps {
   metrics: DailyMetric[];
@@ -28,8 +29,7 @@ export function MonitoringTrendChart({
 }: MonitoringTrendChartProps) {
   const data = metrics.map((metric) => ({
     calls: metric.callsReceived,
-    completed: metric.callsCompleted,
-    cost: metric.estimatedCostCents / 100,
+    costUsdMicros: metric.costTotalUsdMicros,
     date: metric.date,
     label: shortDate(metric.date),
     whatsapp: metric.whatsappConversations,
@@ -37,7 +37,7 @@ export function MonitoringTrendChart({
 
   return (
     <div
-      aria-label="Grafico giornaliero di chiamate, conversazioni WhatsApp e costo stimato"
+      aria-label="Grafico giornaliero di chiamate, conversazioni WhatsApp e costo reale Vapi in USD"
       className="h-72 w-full min-w-0"
       role="img"
     >
@@ -70,9 +70,11 @@ export function MonitoringTrendChart({
             axisLine={false}
             orientation="right"
             tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-            tickFormatter={(value) => `${Number(value).toFixed(1)} €`}
+            tickFormatter={(value) =>
+              formatUsdMicros(Number(value))
+            }
             tickLine={false}
-            width={52}
+            width={74}
             yAxisId="cost"
           />
           <Tooltip
@@ -85,8 +87,8 @@ export function MonitoringTrendChart({
             }}
             cursor={{ fill: "var(--muted)" }}
             formatter={(value, name) =>
-              name === "Costo"
-                ? [`${Number(value).toFixed(2)} €`, name]
+              name === "Costo Vapi"
+                ? [formatUsdMicros(Number(value)), name]
                 : [value, name]
             }
             labelFormatter={(_, payload) =>
@@ -112,10 +114,10 @@ export function MonitoringTrendChart({
             yAxisId="volume"
           />
           <Line
-            dataKey="cost"
+            dataKey="costUsdMicros"
             dot={{ fill: "var(--card)", r: 3.5, strokeWidth: 2 }}
             isAnimationActive={false}
-            name="Costo"
+            name="Costo Vapi"
             stroke="var(--chart-3)"
             strokeWidth={2.5}
             type="monotone"

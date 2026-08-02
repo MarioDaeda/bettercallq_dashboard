@@ -846,9 +846,9 @@ export class MockDashboardService implements DashboardService {
           isWithinLocalDateRange(metric.date, range),
       )
       .toSorted((left, right) => left.date.localeCompare(right.date));
-    const estimatedCostCents = sum(
+    const costTotalUsdMicros = sum(
       metrics,
-      (metric) => metric.estimatedCostCents,
+      (metric) => metric.costTotalUsdMicros,
     );
     const openInterventions = this.interventions.filter(
       (intervention) =>
@@ -866,9 +866,9 @@ export class MockDashboardService implements DashboardService {
         (metric) => metric.bookingsAttributed,
       ),
       openInterventions: openInterventions.length,
-      estimatedCostCents,
-      estimatedMonthlyCostCents: estimateMonthlyCost(
-        estimatedCostCents,
+      costTotalUsdMicros,
+      projectedMonthlyCostUsdMicros: estimateMonthlyCost(
+        costTotalUsdMicros,
         metrics.length,
       ),
       urgentInterventions: openInterventions.filter(

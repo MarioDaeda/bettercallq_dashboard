@@ -12,7 +12,6 @@ import {
   type Salon,
 } from "@/lib/domain";
 import {
-  demoCostRates,
   resolveMonitoringRanges,
   type MonitoringPeriod,
 } from "@/lib/monitoring/monitoring";
@@ -44,11 +43,6 @@ const completedOutcomes = new Set<ClientCallRow["outcome"]>([
   "information_provided",
   "change_or_cancellation",
 ]);
-
-const voiceCostPerMinuteCents =
-  demoCostRates.transcriptionPerMinuteCents +
-  demoCostRates.languageModelPerMinuteCents +
-  demoCostRates.speechSynthesisPerMinuteCents;
 
 interface AdminMonitoringRows {
   calls: unknown;
@@ -169,7 +163,15 @@ function emptyMetric(
     callsReceived: 0,
     createdAt: timestamp,
     date,
-    estimatedCostCents: 0,
+    callsWithCostData: 0,
+    costTotalUsdMicros: 0,
+    costSttUsdMicros: 0,
+    costLlmUsdMicros: 0,
+    costTtsUsdMicros: 0,
+    costVapiUsdMicros: 0,
+    costTransportUsdMicros: 0,
+    costChatUsdMicros: 0,
+    costKnowledgeBaseUsdMicros: 0,
     id: deterministicMetricId(salonId, date),
     integrationErrors: 0,
     interventionsCreated: 0,
@@ -338,6 +340,26 @@ function buildOverview(
     metric.callDurationSeconds +=
       call.duration_seconds ?? 0;
 
+    if (call.cost_total_usd_micros !== null) {
+      metric.callsWithCostData += 1;
+      metric.costTotalUsdMicros +=
+        call.cost_total_usd_micros;
+      metric.costSttUsdMicros +=
+        call.cost_stt_usd_micros ?? 0;
+      metric.costLlmUsdMicros +=
+        call.cost_llm_usd_micros ?? 0;
+      metric.costTtsUsdMicros +=
+        call.cost_tts_usd_micros ?? 0;
+      metric.costVapiUsdMicros +=
+        call.cost_vapi_usd_micros ?? 0;
+      metric.costTransportUsdMicros +=
+        call.cost_transport_usd_micros ?? 0;
+      metric.costChatUsdMicros +=
+        call.cost_chat_usd_micros ?? 0;
+      metric.costKnowledgeBaseUsdMicros +=
+        call.cost_knowledge_base_usd_micros ?? 0;
+    }
+
     if (completedOutcomes.has(call.outcome)) {
       metric.callsCompleted += 1;
     }
@@ -394,13 +416,6 @@ function buildOverview(
     }
   }
 
-  for (const metric of metrics) {
-    metric.estimatedCostCents = Math.round(
-      (metric.callDurationSeconds / 60) *
-        voiceCostPerMinuteCents,
-    );
-  }
-
   const callsReceived = metrics.reduce(
     (total, metric) => total + metric.callsReceived,
     0,
@@ -410,9 +425,9 @@ function buildOverview(
       total + metric.bookingsAttributed,
     0,
   );
-  const estimatedCostCents = metrics.reduce(
+  const costTotalUsdMicros = metrics.reduce(
     (total, metric) =>
-      total + metric.estimatedCostCents,
+      total + metric.costTotalUsdMicros,
     0,
   );
   const interventionsCreated = metrics.reduce(
@@ -430,12 +445,12 @@ function buildOverview(
     bookingsAttributed,
     callsReceived,
     channels: channels.map(mapChannelStatus),
-    estimatedCostCents,
-    estimatedMonthlyCostCents:
+    costTotalUsdMicros,
+    projectedMonthlyCostUsdMicros:
       metrics.length === 0
         ? 0
         : Math.round(
-            (estimatedCostCents / metrics.length) * 30,
+            (costTotalUsdMicros / metrics.length) * 30,
           ),
     metrics,
     openInterventions: Math.max(
@@ -594,7 +609,7 @@ export async function loadAdminMonitoringPageData({
     supabase
       .from("client_calls")
       .select(
-        "id,salon_id,customer_phone,customer_name,started_at,ended_at,duration_seconds,outcome,summary,requested_service,processing_status,created_at,updated_at",
+        "id,salon_id,customer_phone,customer_name,started_at,ended_at,duration_seconds,cost_total_usd_micros,cost_stt_usd_micros,cost_llm_usd_micros,cost_tts_usd_micros,cost_vapi_usd_micros,cost_transport_usd_micros,cost_chat_usd_micros,cost_knowledge_base_usd_micros,outcome,summary,requested_service,processing_status,created_at,updated_at",
       )
       .eq("salon_id", salon.id)
       .gte(

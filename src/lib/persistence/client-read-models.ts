@@ -46,6 +46,24 @@ export const clientCallRowSchema = z
     started_at: dateTimeSchema,
     ended_at: dateTimeSchema.nullable(),
     duration_seconds: z.number().int().nonnegative().nullable(),
+    cost_total_usd_micros: z.number().int().nonnegative().nullable().default(null),
+    cost_stt_usd_micros: z.number().int().nonnegative().nullable().default(null),
+    cost_llm_usd_micros: z.number().int().nonnegative().nullable().default(null),
+    cost_tts_usd_micros: z.number().int().nonnegative().nullable().default(null),
+    cost_vapi_usd_micros: z.number().int().nonnegative().nullable().default(null),
+    cost_transport_usd_micros: z
+      .number()
+      .int()
+      .nonnegative()
+      .nullable()
+      .default(null),
+    cost_chat_usd_micros: z.number().int().nonnegative().nullable().default(null),
+    cost_knowledge_base_usd_micros: z
+      .number()
+      .int()
+      .nonnegative()
+      .nullable()
+      .default(null),
     outcome: z.enum([
       "booking_completed",
       "information_provided",

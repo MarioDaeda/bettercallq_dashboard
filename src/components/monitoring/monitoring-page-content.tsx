@@ -8,10 +8,8 @@ import {
   CircleAlert,
   Clock3,
   Coins,
-  MessageCircle,
   PhoneCall,
   ShieldAlert,
-  Sparkles,
   TriangleAlert,
   WalletCards,
   type LucideIcon,
@@ -32,15 +30,15 @@ import type { IntegrationError, Salon } from "@/lib/domain";
 import type { Overview } from "@/lib/services/dashboard-service";
 import {
   aggregateMonitoringMetrics,
+  calculateCoveredCostDelta,
   calculateMetricDelta,
-  demoCostRates,
   monitoringPeriodLabels,
   type MetricDelta,
   type MonitoringPeriod,
   type MonitoringSummary,
 } from "@/lib/monitoring/monitoring";
 import {
-  formatCurrencyCents,
+  formatUsdMicros,
   formatDateTime,
   formatInteger,
   formatLocalDate,
@@ -62,10 +60,6 @@ const percentFormatter = new Intl.NumberFormat("it-IT", {
   style: "percent",
 });
 
-const decimalFormatter = new Intl.NumberFormat("it-IT", {
-  maximumFractionDigits: 1,
-});
-
 const providerLabels: Record<IntegrationError["provider"], string> = {
   vapi: "Vapi",
   whatsapp: "WhatsApp",
@@ -84,6 +78,24 @@ const severityVariants: Record<
   critical: "destructive",
 };
 
+function formatAvailableCost(
+  summary: MonitoringSummary,
+): string {
+  return summary.callsWithCostData === 0
+    ? "Non disponibile"
+    : formatUsdMicros(summary.costTotalUsdMicros);
+}
+
+function costKpiDescription(
+  summary: MonitoringSummary,
+): string {
+  if (summary.callsWithCostData === 0) {
+    return "Nessun report Vapi con costo disponibile nel periodo.";
+  }
+
+  return `${formatUsdMicros(summary.costPerCostedCallUsdMicros)} per chiamata con costo; proiezione mensile ${formatUsdMicros(summary.projectedMonthlyCostUsdMicros)}. Copertura ${summary.callsWithCostData}/${summary.callsReceived}.`;
+}
+
 export function MonitoringPageContent({
   current,
   period,
@@ -101,6 +113,10 @@ export function MonitoringPageContent({
     periodDays,
   );
   const currentLabel = monitoringPeriodLabels[period];
+  const costDelta = calculateCoveredCostDelta(
+    currentSummary,
+    previousSummary,
+  );
   const previousLabel =
     period === "today" ? "Giorno precedente" : "7 giorni precedenti";
 
@@ -146,13 +162,10 @@ export function MonitoringPageContent({
       intent: "positive-down",
     },
     {
-      label: "Costo stimato",
-      current: formatCurrencyCents(currentSummary.estimatedCostCents),
-      previous: formatCurrencyCents(previousSummary.estimatedCostCents),
-      delta: calculateMetricDelta(
-        currentSummary.estimatedCostCents,
-        previousSummary.estimatedCostCents,
-      ),
+      label: "Costo reale Vapi",
+      current: formatAvailableCost(currentSummary),
+      previous: formatAvailableCost(previousSummary),
+      delta: costDelta,
       intent: "positive-down",
     },
   ];
@@ -162,7 +175,7 @@ export function MonitoringPageContent({
       <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <PageHeader
           badge="Monitoraggio · dati Supabase"
-          description="Volumi e qualità letti da Supabase; costi stimati con formule centralizzate e confronto con il periodo precedente."
+          description="Volumi, qualità e costi reali comunicati da Vapi e letti da Supabase, con copertura esplicita del dato."
           title="Numeri utili, senza una console tecnica."
         />
         <div className="shrink-0">
@@ -214,16 +227,13 @@ export function MonitoringPageContent({
           value={formatDuration(currentSummary.averageCallDurationSeconds)}
         />
         <KpiCard
-          description={`${formatCurrencyCents(currentSummary.costPerContactCents)} per contatto; proiezione mensile ${formatCurrencyCents(currentSummary.projectedMonthlyCostCents)}.`}
-          delta={calculateMetricDelta(
-            currentSummary.estimatedCostCents,
-            previousSummary.estimatedCostCents,
-          )}
+          description={costKpiDescription(currentSummary)}
+          delta={costDelta}
           icon={WalletCards}
           intent="positive-down"
-          label="Costo stimato"
+          label="Costo reale Vapi"
           previousLabel={previousLabel}
-          value={formatCurrencyCents(currentSummary.estimatedCostCents)}
+          value={formatAvailableCost(currentSummary)}
         />
       </section>
 
@@ -233,8 +243,8 @@ export function MonitoringPageContent({
             <div>
               <CardTitle>Andamento giornaliero</CardTitle>
               <CardDescription className="mt-1">
-                Chiamate e WhatsApp sull’asse sinistro; costo stimato in euro
-                sull’asse destro.
+                Chiamate e WhatsApp sull’asse sinistro; costo reale Vapi
+                in USD sull’asse destro.
               </CardDescription>
             </div>
             <Badge variant="outline">{currentLabel}</Badge>
@@ -385,35 +395,31 @@ export function MonitoringPageContent({
 
         <Card className="xl:col-span-5">
           <CardHeader>
-            <CardTitle>Come leggere la stima</CardTitle>
+            <CardTitle>Copertura e origine dei costi</CardTitle>
             <CardDescription className="mt-1">
-              Le tariffe sono parametri dimostrativi, non prezzi contrattuali.
+              Importi USD comunicati da Vapi, senza tariffe demo o conversione in euro.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-xs leading-5 text-muted-foreground">
             <FormulaRow
               icon={PhoneCall}
-              text={`Trascrizione: ${decimalFormatter.format(demoCostRates.transcriptionPerMinuteCents)} cent/minuto di audio.`}
+              text={`Chiamate con costo disponibile: ${currentSummary.callsWithCostData} su ${currentSummary.callsReceived}.`}
             />
             <FormulaRow
-              icon={Sparkles}
-              text={`Modello linguistico: ${decimalFormatter.format(demoCostRates.languageModelPerMinuteCents)} cent/minuto.`}
-            />
-            <FormulaRow
-              icon={Bot}
-              text={`Sintesi vocale: ${decimalFormatter.format(demoCostRates.speechSynthesisPerMinuteCents)} cent/minuto.`}
-            />
-            <FormulaRow
-              icon={MessageCircle}
-              text={`WhatsApp: ${decimalFormatter.format(demoCostRates.whatsappPerMessageCents)} cent/messaggio stimato; il conteggio resta a zero finché i messaggi non sono persistiti.`}
+              icon={CircleAlert}
+              text={`Chiamate senza costo: ${currentSummary.callsWithoutCostData}; sono escluse da totale, media e ripartizione.`}
             />
             <FormulaRow
               icon={Coins}
-              text="Telefonia e costo piattaforma non sono ancora inclusi nei dati reali; il totale mostra ASR, modello linguistico e sintesi vocale."
+              text="Il totale e le componenti provengono dal report finale Vapi persistito in Supabase."
+            />
+            <FormulaRow
+              icon={WalletCards}
+              text={`Proiezione mensile = costo disponibile del periodo / ${periodDays} × 30.`}
             />
             <div className="rounded-2xl border bg-muted/25 p-3">
               Periodo: <strong className="text-foreground">{currentLabel}</strong> ·
-              proiezione mensile = costo del periodo / {periodDays} × 30.
+              copertura {percentFormatter.format(currentSummary.costCoverageRate)}.
             </div>
           </CardContent>
         </Card>
@@ -424,7 +430,7 @@ export function MonitoringPageContent({
 
 interface KpiCardProps {
   description: string;
-  delta: MetricDelta;
+  delta: MetricDelta | null;
   icon: LucideIcon;
   intent: DeltaIntent;
   label: string;
@@ -467,9 +473,13 @@ function DeltaBadge({
   delta,
   intent,
 }: {
-  delta: MetricDelta;
+  delta: MetricDelta | null;
   intent: DeltaIntent;
 }) {
+  if (!delta) {
+    return <Badge variant="outline">n/d</Badge>;
+  }
+
   const Icon =
     delta.direction === "up"
       ? ArrowUpRight
@@ -525,61 +535,81 @@ function OperationalRow({
 function CostBreakdownCard({ summary }: { summary: MonitoringSummary }) {
   const entries = [
     {
-      label: "Sintesi vocale",
-      value: summary.costBreakdown.speechSynthesisCents,
+      label: "Trascrizione (STT)",
+      value: summary.costBreakdown.sttUsdMicros,
     },
     {
-      label: "Trascrizione",
-      value: summary.costBreakdown.transcriptionCents,
+      label: "Modello linguistico (LLM)",
+      value: summary.costBreakdown.llmUsdMicros,
     },
     {
-      label: "Modello linguistico",
-      value: summary.costBreakdown.languageModelCents,
+      label: "Sintesi vocale (TTS)",
+      value: summary.costBreakdown.ttsUsdMicros,
     },
     {
-      label: "WhatsApp",
-      value: summary.costBreakdown.whatsappCents,
+      label: "Piattaforma Vapi",
+      value: summary.costBreakdown.vapiUsdMicros,
     },
     {
-      label: "Telefonia e piattaforma",
-      value: summary.costBreakdown.telephonyAndPlatformCents,
+      label: "Trasporto",
+      value: summary.costBreakdown.transportUsdMicros,
     },
-  ];
-  const total = Math.max(1, summary.costBreakdown.totalCents);
+    {
+      label: "Chat Vapi",
+      value: summary.costBreakdown.chatUsdMicros,
+    },
+    {
+      label: "Knowledge base",
+      value: summary.costBreakdown.knowledgeBaseUsdMicros,
+    },
+    {
+      label: "Altro non classificato",
+      value: summary.costBreakdown.unclassifiedUsdMicros,
+    },
+  ].filter((entry) => entry.value > 0);
+  const total = Math.max(
+    1,
+    summary.costBreakdown.totalUsdMicros,
+  );
 
   return (
     <Card className="xl:col-span-5">
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle>Ripartizione del costo</CardTitle>
+          <CardTitle>Ripartizione del costo Vapi</CardTitle>
           <CardDescription className="mt-1">
-            Componenti calcolate e residuo della stima fixture.
+            Componenti reali dei report disponibili; le chiamate storiche senza
+            costo sono escluse.
           </CardDescription>
         </div>
         <Badge variant="outline">
-          {formatCurrencyCents(summary.estimatedCostCents)}
+          {formatAvailableCost(summary)}
         </Badge>
       </CardHeader>
       <CardContent className="space-y-4">
-        {entries.map((entry) => {
-          const percentage = entry.value / total;
-          return (
-            <div className="space-y-2" key={entry.label}>
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <span className="font-medium">{entry.label}</span>
-                <span className="tabular-nums text-muted-foreground">
-                  {formatCurrencyCents(entry.value)} · {percentFormatter.format(percentage)}
-                </span>
+        {summary.callsWithCostData === 0 ? (
+          <EmptyPanel text="Nessun costo Vapi disponibile nel periodo selezionato." />
+        ) : (
+          entries.map((entry) => {
+            const percentage = entry.value / total;
+            return (
+              <div className="space-y-2" key={entry.label}>
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="font-medium">{entry.label}</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {formatUsdMicros(entry.value)} · {percentFormatter.format(percentage)}
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${Math.min(100, percentage * 100)}%` }}
+                  />
+                </div>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary"
-                  style={{ width: `${Math.min(100, percentage * 100)}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </CardContent>
     </Card>
   );
@@ -587,7 +617,7 @@ function CostBreakdownCard({ summary }: { summary: MonitoringSummary }) {
 
 interface ComparisonRowProps {
   current: string;
-  delta: MetricDelta;
+  delta: MetricDelta | null;
   intent: DeltaIntent;
   label: string;
   previous: string;
