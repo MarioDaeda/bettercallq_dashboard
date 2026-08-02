@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 import { resolveAppIdentity, type AppIdentity } from "./identity";
+import { loadPersistedAppIdentity } from "./persisted-identity";
 
 export async function getCurrentAppSession(): Promise<AppIdentity | null> {
   if (!isSupabaseConfigured()) {
@@ -20,6 +21,22 @@ export async function getCurrentAppSession(): Promise<AppIdentity | null> {
     return null;
   }
 
+  const persistedIdentity = await loadPersistedAppIdentity(
+    supabase,
+    user,
+  );
+
+  if (persistedIdentity.status === "resolved") {
+    return persistedIdentity.identity;
+  }
+
+  if (persistedIdentity.status === "not_configured") {
+    return null;
+  }
+
+  // Compatibilità temporanea:
+  // finché la migrazione RPC non è presente nel progetto remoto,
+  // l'app continua a usare gli app_metadata della Task 8B.
   return resolveAppIdentity(user);
 }
 

@@ -521,3 +521,14 @@ questo workflow.
 La Task 8C.1 crea una fondazione chiusa: RLS attiva, nessuna policy per il
 frontend e nessun repository reale. L'app continua a usare le fixture finché
 membership, policy e query server-side non sono completate e testate.
+
+## 18. Risoluzione dell'identità
+
+La sessione SSR verifica prima Supabase Auth e poi invoca una RPC PostgreSQL
+limitata all'utente corrente. La RPC legge profilo e membership con privilegi
+`security definer`, ma non riceve parametri che possano selezionare un altro
+utente.
+
+Finché la migrazione non è disponibile sul remoto, la sessione mantiene un
+fallback agli `app_metadata`. Una volta verificate le policy RLS della Task 8C.3,
+il fallback verrà eliminato.

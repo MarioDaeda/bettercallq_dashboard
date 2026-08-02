@@ -149,3 +149,22 @@ renderizzano componenti distinti e read-only per il cliente.
 Il numero telefonico viene mostrato integralmente al proprietario. Prima dei
 dati reali resta obbligatoria la verifica persistente della membership sul
 `salonId`.
+
+## 9. Identità persistente
+
+La fonte primaria del ruolo diventa:
+
+```text
+profiles.platform_role
++
+salon_memberships.role
+```
+
+La funzione `current_app_identity()` non accetta identificatori dal client e
+usa soltanto `auth.uid()`. Un admin viene risolto da
+`profiles.platform_role = admin`; un utente standard con una membership
+`owner`, `manager` o `viewer` viene tradotto nel ruolo applicativo
+`salon_owner`.
+
+Il ruolo membership `support` non viene ancora mappato perché richiede una
+console distinta.

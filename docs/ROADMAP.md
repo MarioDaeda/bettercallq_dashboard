@@ -546,3 +546,24 @@ Uscita:
 - nessuna pagina usa ancora il database;
 - nessun `db push` automatico;
 - policy e repository arrivano nelle task successive.
+
+### Task 8C.2 — Identità e membership persistenti
+
+**Stato:** completata nel codice
+
+Implementare:
+
+- RPC sicura basata su `auth.uid()`;
+- risoluzione sessione da profilo e membership;
+- blocco degli utenti standard senza membership univoca;
+- esclusione dei saloni sospesi;
+- fallback temporaneo agli `app_metadata`;
+- bootstrap idempotente del pilota;
+- aggiornamento coordinato di Auth e database;
+- test dei mapping e dei privilegi della funzione.
+
+Uscita:
+
+- il database diventa la fonte primaria dell'identità;
+- la UI non interroga direttamente le tabelle;
+- il fallback verrà rimosso nella Task 8C.3.
