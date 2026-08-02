@@ -20,15 +20,10 @@ describe("role-aware navigation", () => {
     ]);
   });
 
-  it("mostra al proprietario soltanto quattro sezioni operative", () => {
+  it("mostra al proprietario soltanto tre sezioni di monitoraggio", () => {
     expect(
       getNavigationForRole("salon_owner").map((item) => item.label),
-    ).toEqual([
-      "Panoramica",
-      "Da gestire",
-      "Chiamate",
-      "Dati del salone",
-    ]);
+    ).toEqual(["Panoramica", "Chiamate", "WhatsApp"]);
   });
 
   it("non espone sezioni amministrative al proprietario", () => {
@@ -36,16 +31,17 @@ describe("role-aware navigation", () => {
       (item) => item.href,
     );
 
-    expect(hrefs).not.toContain("/whatsapp");
+    expect(hrefs).not.toContain("/da-gestire");
+    expect(hrefs).not.toContain("/dati-salone");
     expect(hrefs).not.toContain("/impostazioni-ia");
     expect(hrefs).not.toContain("/qr-e-canali");
     expect(hrefs).not.toContain("/monitoraggio");
   });
 
-  it("risolve la voce corrente nel perimetro del ruolo", () => {
+  it("risolve WhatsApp nel perimetro cliente", () => {
     expect(
-      getNavigationItem("/dati-salone", "salon_owner").label,
-    ).toBe("Dati del salone");
+      getNavigationItem("/whatsapp", "salon_owner").label,
+    ).toBe("WhatsApp");
 
     expect(
       getNavigationItem("/monitoraggio", "admin").label,

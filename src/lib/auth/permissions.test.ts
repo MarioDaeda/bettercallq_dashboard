@@ -22,37 +22,36 @@ describe("role permissions", () => {
     }
   });
 
-  it("limita il proprietario alle funzioni operative del salone", () => {
+  it("limita il proprietario al monitoraggio essenziale", () => {
     expect(rolePermissions.salon_owner).toEqual([
       "overview:view",
-      "interventions:view",
-      "interventions:manage",
       "calls:view",
-      "salon-settings:view",
-      "salon-settings:edit",
+      "whatsapp:view",
     ]);
   });
 
-  it("nega al proprietario configurazione tecnica e diagnostica", () => {
-    expect(hasPermission("salon_owner", "ai-settings:manage")).toBe(false);
-    expect(hasPermission("salon_owner", "channels:manage")).toBe(false);
+  it("nega al proprietario gestione tecnica e dati sensibili", () => {
+    expect(hasPermission("salon_owner", "interventions:view")).toBe(false);
+    expect(hasPermission("salon_owner", "transcripts:view")).toBe(false);
+    expect(hasPermission("salon_owner", "whatsapp:manage")).toBe(false);
+    expect(hasPermission("salon_owner", "salon-settings:edit")).toBe(false);
     expect(hasPermission("salon_owner", "monitoring:view")).toBe(false);
     expect(hasPermission("salon_owner", "diagnostics:view")).toBe(false);
-    expect(hasPermission("salon_owner", "users:manage")).toBe(false);
   });
 
-  it("verifica insiemi di permessi senza duplicare logica nelle pagine", () => {
+  it("permette la consultazione voce e WhatsApp senza gestione", () => {
     expect(
       hasEveryPermission("salon_owner", [
-        "interventions:view",
-        "interventions:manage",
+        "overview:view",
+        "calls:view",
+        "whatsapp:view",
       ]),
     ).toBe(true);
 
     expect(
       hasEveryPermission("salon_owner", [
-        "calls:view",
-        "transcripts:view",
+        "whatsapp:view",
+        "whatsapp:manage",
       ]),
     ).toBe(false);
   });
