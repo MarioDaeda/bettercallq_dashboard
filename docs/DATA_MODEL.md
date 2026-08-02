@@ -626,3 +626,26 @@ salone:
 
 Per il pilota non vengono introdotti ruoli `manager`, `viewer` o `support`.
 L'eventuale estensione avverrà soltanto dopo aver osservato esigenze reali.
+
+## 9. Prima traduzione SQL — Task 8C.1
+
+La prima migrazione persistente è disponibile in
+`supabase/migrations/20260802114600_database_foundation.sql`.
+
+Il confine di autorizzazione resta `salon_id`. Ruolo piattaforma e ruolo nel
+salone sono separati:
+
+```text
+auth.users
+  └── profiles.platform_role
+salons
+  └── salon_memberships.role
+```
+
+Il piano voce non è codificato nella UI: `subscription_plans` contiene i minuti
+inclusi, mentre `usage_periods` conserva i secondi utilizzati e genera residuo
+ed extra.
+
+RLS è attiva su tutte le tabelle, ma nessuna policy è ancora aperta. Questo
+impedisce l'accesso tramite publishable key finché la Task 8C.3 non definisce le
+regole di isolamento.
