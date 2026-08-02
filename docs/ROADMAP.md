@@ -567,3 +567,26 @@ Uscita:
 - il database diventa la fonte primaria dell'identità;
 - la UI non interroga direttamente le tabelle;
 - il fallback verrà rimosso nella Task 8C.3.
+
+### Task 8C.3 — RLS e isolamento per salone
+
+**Stato:** completata nel codice
+
+Implementare:
+
+- helper RLS nello schema privato;
+- policy `SELECT` per admin e membership attive;
+- nessuna policy di scrittura per il frontend;
+- privilegi di colonna sulle chiamate;
+- esclusione di transcript, recording e ID provider;
+- esclusione dei corpi WhatsApp;
+- viste cliente `security_invoker`;
+- test pgTAP con due saloni distinti;
+- contratti Zod delle viste sicure.
+
+Uscita:
+
+- il cliente può leggere soltanto il proprio `salon_id`;
+- i numeri completi restano disponibili;
+- i contenuti sensibili non sono esposti;
+- le pagine restano sulle fixture fino alla Task 8C.4.

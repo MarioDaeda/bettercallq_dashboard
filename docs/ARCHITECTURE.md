@@ -532,3 +532,17 @@ utente.
 Finché la migrazione non è disponibile sul remoto, la sessione mantiene un
 fallback agli `app_metadata`. Una volta verificate le policy RLS della Task 8C.3,
 il fallback verrà eliminato.
+
+## 19. Superfici read-only
+
+Le pagine cliente non interrogheranno direttamente le tabelle operative.
+Useranno viste `security_invoker` che mantengono RLS e rimuovono colonne
+sensibili.
+
+La separazione è doppia:
+
+1. RLS limita le righe al `salon_id` autorizzato;
+2. i privilegi di colonna e le viste limitano i campi esposti.
+
+Transcript, recording, payload e corpi dei messaggi richiedono repository
+server-side separati.

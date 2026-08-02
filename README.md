@@ -138,3 +138,11 @@ gli `app_metadata` come fallback di migrazione.
 
 Il bootstrap del pilota è documentato in
 `docs/SUPABASE_IDENTITY_SETUP.md`.
+
+## Isolamento dei dati
+
+Le policy RLS separano i saloni e le viste cliente escludono transcript,
+registrazioni, chiavi provider e messaggi. Il numero telefonico completo rimane
+disponibile al proprietario autorizzato.
+
+La strategia è documentata in `docs/SUPABASE_RLS.md`.
