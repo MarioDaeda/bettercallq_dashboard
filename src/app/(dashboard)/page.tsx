@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import {
   CalendarCheck2,
   CircleAlert,
@@ -15,11 +16,7 @@ import { InterventionAttentionValue } from "@/components/interventions/intervent
 import { PeriodFilter } from "@/components/overview/period-filter";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireAppSession } from "@/lib/auth/session";
-import {
-  calculateVoicePlanUsage,
-  isDateTimeInRange,
-  resolveCalendarMonthRange,
-} from "@/lib/client-dashboard/voice-usage";
+import { loadClientDashboardSnapshot } from "@/lib/client-dashboard/client-dashboard-repository";
 import {
   overviewPeriodLabels,
   parseOverviewPeriod,
@@ -49,35 +46,21 @@ export default async function OverviewPage({
   searchParams,
 }: OverviewPageProps) {
   const session = await requireAppSession();
-  const salonId = session.salonId ?? PILOT_SALON_ID;
-
   if (session.role === "salon_owner") {
-    const [salon, reportingDate] = await Promise.all([
-      dashboardService.getSalon(salonId),
-      dashboardService.getReportingDate(salonId),
-    ]);
-    const range = resolveCalendarMonthRange(reportingDate);
-    const [overview, calls, conversations] = await Promise.all([
-      dashboardService.getOverview(salonId, range),
-      dashboardService.listCalls(salonId, range),
-      dashboardService.listConversations(salonId),
-    ]);
-    const monthlyConversations = conversations.filter((conversation) =>
-      isDateTimeInRange(conversation.createdAt, range),
+    const salonId = session.salonId;
+
+    if (!salonId) {
+      redirect("/accesso-non-configurato");
+    }
+
+    const snapshot = await loadClientDashboardSnapshot(
+      salonId,
     );
 
-    return (
-      <ClientOverview
-        conversationCount={monthlyConversations.length}
-        overview={overview}
-        range={range}
-        reportingDate={reportingDate}
-        salon={salon}
-        usage={calculateVoicePlanUsage(calls)}
-      />
-    );
+    return <ClientOverview snapshot={snapshot} />;
   }
 
+  const salonId = PILOT_SALON_ID;
   const query = await searchParams;
   const period = parseOverviewPeriod(query.period);
   const [salon, reportingDate] = await Promise.all([

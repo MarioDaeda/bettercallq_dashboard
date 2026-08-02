@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { ClientWhatsAppPage } from "@/components/client-dashboard/client-whatsapp-page";
 import { WhatsAppPageClient } from "@/components/whatsapp/whatsapp-page-client";
 import { requireAppSession } from "@/lib/auth/session";
-import {
-  dashboardService,
-  PILOT_SALON_ID,
-} from "@/lib/services/mock-dashboard-service";
+import { loadClientDashboardSnapshot } from "@/lib/client-dashboard/client-dashboard-repository";
 
 export const metadata: Metadata = {
   title: "WhatsApp",
@@ -24,23 +22,27 @@ export default async function WhatsAppPage({
   const session = await requireAppSession();
 
   if (session.role === "salon_owner") {
-    const salonId = session.salonId ?? PILOT_SALON_ID;
-    const [salon, inbox] = await Promise.all([
-      dashboardService.getSalon(salonId),
-      dashboardService.listConversationInbox(salonId),
-    ]);
+    if (!session.salonId) {
+      redirect("/accesso-non-configurato");
+    }
 
-    return (
-      <ClientWhatsAppPage inbox={inbox} timeZone={salon.timezone} />
+    const snapshot = await loadClientDashboardSnapshot(
+      session.salonId,
     );
+
+    return <ClientWhatsAppPage snapshot={snapshot} />;
   }
 
   const query = await searchParams;
-  const initialConversationId = Array.isArray(query.conversation)
+  const initialConversationId = Array.isArray(
+    query.conversation,
+  )
     ? query.conversation[0]
     : query.conversation;
 
   return (
-    <WhatsAppPageClient initialConversationId={initialConversationId} />
+    <WhatsAppPageClient
+      initialConversationId={initialConversationId}
+    />
   );
 }

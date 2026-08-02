@@ -590,3 +590,27 @@ Uscita:
 - i numeri completi restano disponibili;
 - i contenuti sensibili non sono esposti;
 - le pagine restano sulle fixture fino alla Task 8C.4.
+
+### Task 8C.4 — Repository cliente read-only
+
+**Stato:** completata nel codice
+
+Implementare:
+
+- validazione reale delle migrazioni con Supabase CLI;
+- configurazione locale versionata;
+- CLI Supabase fissata nelle dipendenze;
+- repository unico per lo snapshot mensile;
+- sorgente selezionabile tra fixture e Supabase;
+- query esclusivamente sulle viste cliente;
+- mapping Zod e controllo difensivo del `salon_id`;
+- filtro mensile nella timezone del salone;
+- collegamento di Panoramica, Chiamate e WhatsApp;
+- mantenimento della console admin sulle fixture.
+
+Uscita:
+
+- modalità `fixtures` predefinita;
+- modalità `supabase` attivabile solo dopo bootstrap;
+- nessuna scrittura dal frontend;
+- ingestione reale rinviata alla Task 8C.5.

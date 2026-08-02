@@ -1,4 +1,8 @@
-import { CircleCheck, CircleDashed, TriangleAlert } from "lucide-react";
+import {
+  CircleCheck,
+  CircleDashed,
+  TriangleAlert,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,14 +12,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { ChannelStatus, HealthStatus } from "@/lib/domain";
+import type { ClientChannelData } from "@/lib/client-dashboard/client-data";
 import {
   formatClientDateTime,
   getHealthStatusLabel,
 } from "@/lib/client-dashboard/formatters";
+import type { HealthStatus } from "@/lib/domain";
 
 interface ServiceStatusCardProps {
-  channels: ChannelStatus[];
+  channels: ClientChannelData[];
   timeZone: string;
 }
 
@@ -38,7 +43,12 @@ function getVariant(status: HealthStatus) {
 
 function StatusIcon({ status }: { status: HealthStatus }) {
   if (status === "operational") {
-    return <CircleCheck aria-hidden="true" className="size-4 text-success" />;
+    return (
+      <CircleCheck
+        aria-hidden="true"
+        className="size-4 text-success"
+      />
+    );
   }
 
   if (status === "offline" || status === "degraded") {
@@ -62,15 +72,20 @@ export function ServiceStatusCard({
   channels,
   timeZone,
 }: ServiceStatusCardProps) {
-  const visibleChannels = (["vapi", "whatsapp"] as const).map((channel) => {
-    const status = channels.find((item) => item.channel === channel);
+  const visibleChannels = (["vapi", "whatsapp"] as const).map(
+    (channel) => {
+      const status = channels.find(
+        (item) => item.channel === channel,
+      );
 
-    return {
-      channel,
-      status: status?.status ?? ("not_configured" as const),
-      checkedAt: status?.checkedAt,
-    };
-  });
+      return {
+        channel,
+        checkedAt: status?.checkedAt,
+        status:
+          status?.status ?? ("not_configured" as const),
+      };
+    },
+  );
 
   const latestCheck = visibleChannels
     .map((channel) => channel.checkedAt)
@@ -83,7 +98,8 @@ export function ServiceStatusCard({
       <CardHeader>
         <CardTitle>Stato del servizio</CardTitle>
         <CardDescription>
-          Una lettura sintetica dei due canali disponibili al salone.
+          Una lettura sintetica dei due canali disponibili al
+          salone.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
