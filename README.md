@@ -121,3 +121,11 @@ numeri completi e non espongono trascrizioni o diagnostica.
 
 La specifica è documentata in `docs/CLIENT_DASHBOARD.md`.
 
+## Database Supabase
+
+La fondazione PostgreSQL è versionata in `supabase/migrations`. Comprende saloni,
+membership, piani da 300 minuti, consumi, chiamate e WhatsApp. RLS è già
+abilitata, ma il frontend resta sulle fixture finché non vengono introdotte le
+policy di isolamento e i repository reali.
+
+La procedura è descritta in `docs/SUPABASE_DATABASE_SETUP.md`.

@@ -523,3 +523,26 @@ Uscita:
 - la console admin rimane invariata;
 - il cliente non può aprire le route tecniche neppure tramite URL diretto;
 - i dati restano fixture fino alla Task 8C.
+
+### Task 8C.1 — Fondazione database Supabase
+
+**Stato:** completata nel codice, non ancora applicata al remoto
+
+Implementare:
+
+- migrazione SQL versionata;
+- profili collegati ad `auth.users`;
+- saloni e membership persistenti;
+- piano voce e abbonamento;
+- periodi di utilizzo con residuo ed extra generati;
+- chiamate, conversazioni e messaggi;
+- stato canali e audit;
+- RLS abilitata senza policy aperte;
+- seed deterministico del pilota;
+- contratti Zod e test pgTAP.
+
+Uscita:
+
+- nessuna pagina usa ancora il database;
+- nessun `db push` automatico;
+- policy e repository arrivano nelle task successive.

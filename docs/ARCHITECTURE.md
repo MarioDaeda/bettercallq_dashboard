@@ -511,3 +511,13 @@ che l'utente non può modificare dal client.
 
 La Task 8C sostituirà il collegamento temporaneo con profili e membership
 persistenti, repository reali e Row Level Security.
+
+## 17. Migrazioni Supabase
+
+Lo schema PostgreSQL è versionato in `supabase/migrations`. Le modifiche remote
+non devono essere effettuate direttamente dal Table Editor una volta avviato
+questo workflow.
+
+La Task 8C.1 crea una fondazione chiusa: RLS attiva, nessuna policy per il
+frontend e nessun repository reale. L'app continua a usare le fixture finché
+membership, policy e query server-side non sono completate e testate.
