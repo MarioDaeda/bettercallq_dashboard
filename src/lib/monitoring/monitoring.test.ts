@@ -5,6 +5,7 @@ import type { DailyMetric } from "@/lib/domain";
 import {
   aggregateMonitoringMetrics,
   calculateCostBreakdown,
+  calculateCoveredCostDelta,
   calculateMetricDelta,
   parseMonitoringPeriod,
   resolveMonitoringRanges,
@@ -120,6 +121,50 @@ describe("monitoring", () => {
     expect(summary.callsWithCostData).toBe(1);
     expect(summary.callsWithoutCostData).toBe(1);
     expect(summary.costCoverageRate).toBe(0.5);
+  });
+
+  it("confronta i costi solo con copertura completa", () => {
+    const current = aggregateMonitoringMetrics(
+      [
+        metric({
+          callsReceived: 1,
+          callsWithCostData: 1,
+          costTotalUsdMicros: 500_000,
+        }),
+      ],
+      1,
+    );
+    const previous = aggregateMonitoringMetrics(
+      [
+        metric({
+          callsReceived: 1,
+          callsWithCostData: 1,
+          costTotalUsdMicros: 400_000,
+        }),
+      ],
+      1,
+    );
+    const partial = aggregateMonitoringMetrics(
+      [
+        metric({
+          callsReceived: 2,
+          callsWithCostData: 1,
+          costTotalUsdMicros: 500_000,
+        }),
+      ],
+      1,
+    );
+
+    expect(
+      calculateCoveredCostDelta(current, previous),
+    ).toEqual({
+      absolute: 100_000,
+      percent: 0.25,
+      direction: "up",
+    });
+    expect(
+      calculateCoveredCostDelta(current, partial),
+    ).toBeNull();
   });
 
   it("gestisce confronti normali e basi uguali a zero", () => {

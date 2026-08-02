@@ -30,6 +30,7 @@ import type { IntegrationError, Salon } from "@/lib/domain";
 import type { Overview } from "@/lib/services/dashboard-service";
 import {
   aggregateMonitoringMetrics,
+  calculateCoveredCostDelta,
   calculateMetricDelta,
   monitoringPeriodLabels,
   type MetricDelta,
@@ -112,6 +113,10 @@ export function MonitoringPageContent({
     periodDays,
   );
   const currentLabel = monitoringPeriodLabels[period];
+  const costDelta = calculateCoveredCostDelta(
+    currentSummary,
+    previousSummary,
+  );
   const previousLabel =
     period === "today" ? "Giorno precedente" : "7 giorni precedenti";
 
@@ -160,10 +165,7 @@ export function MonitoringPageContent({
       label: "Costo reale Vapi",
       current: formatAvailableCost(currentSummary),
       previous: formatAvailableCost(previousSummary),
-      delta: calculateMetricDelta(
-        currentSummary.costTotalUsdMicros,
-        previousSummary.costTotalUsdMicros,
-      ),
+      delta: costDelta,
       intent: "positive-down",
     },
   ];
@@ -226,10 +228,7 @@ export function MonitoringPageContent({
         />
         <KpiCard
           description={costKpiDescription(currentSummary)}
-          delta={calculateMetricDelta(
-            currentSummary.costTotalUsdMicros,
-            previousSummary.costTotalUsdMicros,
-          )}
+          delta={costDelta}
           icon={WalletCards}
           intent="positive-down"
           label="Costo reale Vapi"
@@ -431,7 +430,7 @@ export function MonitoringPageContent({
 
 interface KpiCardProps {
   description: string;
-  delta: MetricDelta;
+  delta: MetricDelta | null;
   icon: LucideIcon;
   intent: DeltaIntent;
   label: string;
@@ -474,9 +473,13 @@ function DeltaBadge({
   delta,
   intent,
 }: {
-  delta: MetricDelta;
+  delta: MetricDelta | null;
   intent: DeltaIntent;
 }) {
+  if (!delta) {
+    return <Badge variant="outline">n/d</Badge>;
+  }
+
   const Icon =
     delta.direction === "up"
       ? ArrowUpRight
@@ -614,7 +617,7 @@ function CostBreakdownCard({ summary }: { summary: MonitoringSummary }) {
 
 interface ComparisonRowProps {
   current: string;
-  delta: MetricDelta;
+  delta: MetricDelta | null;
   intent: DeltaIntent;
   label: string;
   previous: string;

@@ -239,6 +239,30 @@ export function aggregateMonitoringMetrics(
   };
 }
 
+export function calculateCoveredCostDelta(
+  current: MonitoringSummary,
+  previous: MonitoringSummary,
+): MetricDelta | null {
+  const currentHasCompleteCoverage =
+    current.callsReceived > 0 &&
+    current.callsWithCostData === current.callsReceived;
+  const previousHasCompleteCoverage =
+    previous.callsReceived > 0 &&
+    previous.callsWithCostData === previous.callsReceived;
+
+  if (
+    !currentHasCompleteCoverage ||
+    !previousHasCompleteCoverage
+  ) {
+    return null;
+  }
+
+  return calculateMetricDelta(
+    current.costTotalUsdMicros,
+    previous.costTotalUsdMicros,
+  );
+}
+
 export function calculateMetricDelta(
   current: number,
   previous: number,
