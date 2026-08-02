@@ -155,3 +155,11 @@ testato e popolato.
 
 La procedura è documentata in
 `docs/SUPABASE_READ_REPOSITORIES.md`.
+
+## Ingestione idempotente
+
+Le RPC database `ingest_vapi_call` e
+`ingest_whatsapp_conversation` preparano il collegamento con il server webhook.
+Sono riservate a `service_role` e impediscono duplicazioni di eventi e minuti.
+
+Il contratto è documentato in `docs/INGESTION_CORE.md`.
