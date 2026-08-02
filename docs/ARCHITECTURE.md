@@ -556,3 +556,12 @@ sia per fixture sia per Supabase.
 La modalità Supabase usa il client SSR autenticato e interroga soltanto viste
 `security_invoker`. Ogni risultato viene validato con Zod e ricontrollato
 rispetto al `salon_id` della sessione.
+
+## 21. Confine di ingestione
+
+Il server webhook valida i provider e invoca funzioni PostgreSQL riservate a
+`service_role`. Il database esegue deduplicazione, upsert e aggiornamento dei
+consumi nella stessa transazione.
+
+La dashboard resta un consumer read-only. Non riceve direttamente webhook e non
+possiede credenziali di ingestione.

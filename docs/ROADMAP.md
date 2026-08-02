@@ -614,3 +614,26 @@ Uscita:
 - modalità `supabase` attivabile solo dopo bootstrap;
 - nessuna scrittura dal frontend;
 - ingestione reale rinviata alla Task 8C.5.
+
+### Task 8C.5 — Nucleo di ingestione
+
+**Stato:** completata nel codice
+
+Implementare:
+
+- registro `external_events`;
+- deduplicazione per salone, provider ed evento;
+- RPC Vapi riservata a `service_role`;
+- upsert della chiamata per ID provider;
+- ricalcolo atomico del consumo mensile;
+- RPC WhatsApp per il riepilogo conversazione;
+- aggiornamento dello stato dei canali;
+- contratti Zod e adapter RPC;
+- test PostgreSQL di retry e aggiornamento.
+
+Uscita:
+
+- nessun endpoint pubblico nella dashboard;
+- nessuna chiave server-side nel browser;
+- nessun incremento duplicato dei minuti;
+- database remoto ancora invariato.
