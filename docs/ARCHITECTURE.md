@@ -546,3 +546,13 @@ La separazione è doppia:
 
 Transcript, recording, payload e corpi dei messaggi richiedono repository
 server-side separati.
+
+## 20. Repository della dashboard cliente
+
+Le pagine cliente dipendono da un unico snapshot mensile. Il repository sceglie
+la sorgente tramite una variabile server-side e restituisce lo stesso contratto
+sia per fixture sia per Supabase.
+
+La modalità Supabase usa il client SSR autenticato e interroga soltanto viste
+`security_invoker`. Ogni risultato viene validato con Zod e ricontrollato
+rispetto al `salon_id` della sessione.

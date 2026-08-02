@@ -146,3 +146,12 @@ registrazioni, chiavi provider e messaggi. Il numero telefonico completo rimane
 disponibile al proprietario autorizzato.
 
 La strategia è documentata in `docs/SUPABASE_RLS.md`.
+
+## Sorgente dati cliente
+
+`BETTERCALLQ_CLIENT_DATA_SOURCE` seleziona `fixtures` oppure `supabase`. Il
+valore predefinito resta `fixtures` finché il database remoto non è migrato,
+testato e popolato.
+
+La procedura è documentata in
+`docs/SUPABASE_READ_REPOSITORIES.md`.
