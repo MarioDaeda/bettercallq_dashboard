@@ -168,3 +168,13 @@ usa soltanto `auth.uid()`. Un admin viene risolto da
 
 Il ruolo membership `support` non viene ancora mappato perché richiede una
 console distinta.
+
+## 10. Enforcement nel database
+
+La matrice dei permessi UI non costituisce più l'unico controllo. Le tabelle
+persistenti applicano policy RLS basate su profilo e membership.
+
+Il ruolo `salon_owner` viene tradotto in un insieme di `salon_id` accessibili.
+Le query con publishable key ricevono esclusivamente righe appartenenti a tale
+insieme. Il ruolo piattaforma `admin` può leggere tutti i saloni, ma le scritture
+rimangono riservate ai servizi server-side.
