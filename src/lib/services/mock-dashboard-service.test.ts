@@ -712,8 +712,8 @@ describe("MockDashboardService", () => {
       callsReceived: 16,
       bookingsAttributed: 5,
       openInterventions: 3,
-      estimatedCostCents: 97,
-      estimatedMonthlyCostCents: 1455,
+      costTotalUsdMicros: 970000,
+      projectedMonthlyCostUsdMicros: 14550000,
     });
     expect(overview.metrics).toHaveLength(2);
     expect(overview.recentActivities).toHaveLength(6);
@@ -728,8 +728,8 @@ describe("MockDashboardService", () => {
     expect(overview).toMatchObject({
       callsReceived: 8,
       bookingsAttributed: 3,
-      estimatedCostCents: 48,
-      estimatedMonthlyCostCents: 1440,
+      costTotalUsdMicros: 480000,
+      projectedMonthlyCostUsdMicros: 14400000,
     });
     expect(overview.recentCalls).toEqual([]);
     expect(overview.recentActivities).toEqual([]);

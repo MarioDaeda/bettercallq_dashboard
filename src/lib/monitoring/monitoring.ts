@@ -21,17 +21,23 @@ export interface MonitoringRanges {
 }
 
 export interface CostBreakdown {
-  transcriptionCents: number;
-  languageModelCents: number;
-  speechSynthesisCents: number;
-  whatsappCents: number;
-  telephonyAndPlatformCents: number;
-  totalCents: number;
+  sttUsdMicros: number;
+  llmUsdMicros: number;
+  ttsUsdMicros: number;
+  vapiUsdMicros: number;
+  transportUsdMicros: number;
+  chatUsdMicros: number;
+  knowledgeBaseUsdMicros: number;
+  unclassifiedUsdMicros: number;
+  totalUsdMicros: number;
 }
 
 export interface MonitoringSummary {
   callsReceived: number;
   callsCompleted: number;
+  callsWithCostData: number;
+  callsWithoutCostData: number;
+  costCoverageRate: number;
   contactsHandled: number;
   completionRate: number;
   callDurationSeconds: number;
@@ -43,9 +49,9 @@ export interface MonitoringSummary {
   interventionsResolved: number;
   interventionRate: number;
   integrationErrors: number;
-  estimatedCostCents: number;
-  projectedMonthlyCostCents: number;
-  costPerContactCents: number;
+  costTotalUsdMicros: number;
+  projectedMonthlyCostUsdMicros: number;
+  costPerCostedCallUsdMicros: number;
   costBreakdown: CostBreakdown;
 }
 
@@ -54,13 +60,6 @@ export interface MetricDelta {
   percent: number | null;
   direction: "up" | "down" | "flat";
 }
-
-export const demoCostRates = {
-  transcriptionPerMinuteCents: 1,
-  languageModelPerMinuteCents: 1,
-  speechSynthesisPerMinuteCents: 2.2,
-  whatsappPerMessageCents: 0.1,
-} as const;
 
 const addUtcDays = (date: string, days: number) => {
   const value = new Date(`${date}T12:00:00.000Z`);
@@ -104,40 +103,60 @@ export function resolveMonitoringRanges(
 export function calculateCostBreakdown(
   metrics: DailyMetric[],
 ): CostBreakdown {
-  const totalCents = sum(metrics, (metric) => metric.estimatedCostCents);
-  const durationMinutes =
-    sum(metrics, (metric) => metric.callDurationSeconds) / 60;
-  const whatsappMessages = sum(
+  const totalUsdMicros = sum(
     metrics,
-    (metric) =>
-      metric.whatsappMessagesInbound + metric.whatsappMessagesOutbound,
+    (metric) => metric.costTotalUsdMicros,
   );
-
-  const transcriptionCents = Math.round(
-    durationMinutes * demoCostRates.transcriptionPerMinuteCents,
+  const sttUsdMicros = sum(
+    metrics,
+    (metric) => metric.costSttUsdMicros,
   );
-  const languageModelCents = Math.round(
-    durationMinutes * demoCostRates.languageModelPerMinuteCents,
+  const llmUsdMicros = sum(
+    metrics,
+    (metric) => metric.costLlmUsdMicros,
   );
-  const speechSynthesisCents = Math.round(
-    durationMinutes * demoCostRates.speechSynthesisPerMinuteCents,
+  const ttsUsdMicros = sum(
+    metrics,
+    (metric) => metric.costTtsUsdMicros,
   );
-  const whatsappCents = Math.round(
-    whatsappMessages * demoCostRates.whatsappPerMessageCents,
+  const vapiUsdMicros = sum(
+    metrics,
+    (metric) => metric.costVapiUsdMicros,
   );
-  const knownCents =
-    transcriptionCents +
-    languageModelCents +
-    speechSynthesisCents +
-    whatsappCents;
+  const transportUsdMicros = sum(
+    metrics,
+    (metric) => metric.costTransportUsdMicros,
+  );
+  const chatUsdMicros = sum(
+    metrics,
+    (metric) => metric.costChatUsdMicros,
+  );
+  const knowledgeBaseUsdMicros = sum(
+    metrics,
+    (metric) => metric.costKnowledgeBaseUsdMicros,
+  );
+  const classifiedUsdMicros =
+    sttUsdMicros +
+    llmUsdMicros +
+    ttsUsdMicros +
+    vapiUsdMicros +
+    transportUsdMicros +
+    chatUsdMicros +
+    knowledgeBaseUsdMicros;
 
   return {
-    transcriptionCents,
-    languageModelCents,
-    speechSynthesisCents,
-    whatsappCents,
-    telephonyAndPlatformCents: Math.max(0, totalCents - knownCents),
-    totalCents,
+    sttUsdMicros,
+    llmUsdMicros,
+    ttsUsdMicros,
+    vapiUsdMicros,
+    transportUsdMicros,
+    chatUsdMicros,
+    knowledgeBaseUsdMicros,
+    unclassifiedUsdMicros: Math.max(
+      0,
+      totalUsdMicros - classifiedUsdMicros,
+    ),
+    totalUsdMicros,
   };
 }
 
@@ -147,6 +166,10 @@ export function aggregateMonitoringMetrics(
 ): MonitoringSummary {
   const callsReceived = sum(metrics, (metric) => metric.callsReceived);
   const callsCompleted = sum(metrics, (metric) => metric.callsCompleted);
+  const callsWithCostData = sum(
+    metrics,
+    (metric) => metric.callsWithCostData,
+  );
   const callDurationSeconds = sum(
     metrics,
     (metric) => metric.callDurationSeconds,
@@ -165,14 +188,23 @@ export function aggregateMonitoringMetrics(
     metrics,
     (metric) => metric.interventionsCreated,
   );
-  const estimatedCostCents = sum(
+  const costTotalUsdMicros = sum(
     metrics,
-    (metric) => metric.estimatedCostCents,
+    (metric) => metric.costTotalUsdMicros,
   );
 
   return {
     callsReceived,
     callsCompleted,
+    callsWithCostData,
+    callsWithoutCostData: Math.max(
+      0,
+      callsReceived - callsWithCostData,
+    ),
+    costCoverageRate: ratio(
+      callsWithCostData,
+      callsReceived,
+    ),
     contactsHandled,
     completionRate: ratio(callsCompleted, callsReceived),
     callDurationSeconds,
@@ -194,15 +226,15 @@ export function aggregateMonitoringMetrics(
       metrics,
       (metric) => metric.integrationErrors,
     ),
-    estimatedCostCents,
-    projectedMonthlyCostCents:
+    costTotalUsdMicros,
+    projectedMonthlyCostUsdMicros:
       periodDays <= 0
         ? 0
-        : Math.round((estimatedCostCents / periodDays) * 30),
-    costPerContactCents:
-      contactsHandled === 0
+        : Math.round((costTotalUsdMicros / periodDays) * 30),
+    costPerCostedCallUsdMicros:
+      callsWithCostData === 0
         ? 0
-        : Math.round(estimatedCostCents / contactsHandled),
+        : Math.round(costTotalUsdMicros / callsWithCostData),
     costBreakdown: calculateCostBreakdown(metrics),
   };
 }

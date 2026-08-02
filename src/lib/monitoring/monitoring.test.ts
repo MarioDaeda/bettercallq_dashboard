@@ -16,6 +16,7 @@ const metric = (overrides: Partial<DailyMetric> = {}): DailyMetric => ({
   date: "2026-07-30",
   callsReceived: 10,
   callsCompleted: 8,
+  callsWithCostData: 10,
   callDurationSeconds: 600,
   whatsappConversations: 4,
   whatsappMessagesInbound: 10,
@@ -24,7 +25,14 @@ const metric = (overrides: Partial<DailyMetric> = {}): DailyMetric => ({
   interventionsCreated: 2,
   interventionsResolved: 1,
   integrationErrors: 1,
-  estimatedCostCents: 50,
+  costTotalUsdMicros: 500_000,
+  costSttUsdMicros: 50_000,
+  costLlmUsdMicros: 150_000,
+  costTtsUsdMicros: 50_000,
+  costVapiUsdMicros: 250_000,
+  costTransportUsdMicros: 0,
+  costChatUsdMicros: 0,
+  costKnowledgeBaseUsdMicros: 0,
   createdAt: "2026-07-30T21:59:00.000Z",
   updatedAt: "2026-07-30T21:59:00.000Z",
   ...overrides,
@@ -45,15 +53,28 @@ describe("monitoring", () => {
     });
   });
 
-  it("aggrega volumi, qualità e proiezione mensile", () => {
+  it("aggrega volumi, copertura, costo reale e proiezione mensile", () => {
     const summary = aggregateMonitoringMetrics(
-      [metric(), metric({ date: "2026-07-29", estimatedCostCents: 70 })],
+      [
+        metric(),
+        metric({
+          date: "2026-07-29",
+          costTotalUsdMicros: 700_000,
+          costSttUsdMicros: 70_000,
+          costLlmUsdMicros: 210_000,
+          costTtsUsdMicros: 70_000,
+          costVapiUsdMicros: 350_000,
+        }),
+      ],
       2,
     );
 
     expect(summary).toMatchObject({
       callsReceived: 20,
       callsCompleted: 16,
+      callsWithCostData: 20,
+      callsWithoutCostData: 0,
+      costCoverageRate: 1,
       contactsHandled: 28,
       completionRate: 0.8,
       averageCallDurationSeconds: 60,
@@ -64,21 +85,41 @@ describe("monitoring", () => {
       interventionsResolved: 2,
       interventionRate: 4 / 28,
       integrationErrors: 2,
-      estimatedCostCents: 120,
-      projectedMonthlyCostCents: 1800,
-      costPerContactCents: 4,
+      costTotalUsdMicros: 1_200_000,
+      projectedMonthlyCostUsdMicros: 18_000_000,
+      costPerCostedCallUsdMicros: 60_000,
     });
   });
 
-  it("mantiene la ripartizione costi uguale al totale fixture", () => {
+  it("mantiene il breakdown reale uguale al totale", () => {
     const breakdown = calculateCostBreakdown([metric()]);
+
     expect(
-      breakdown.transcriptionCents +
-        breakdown.languageModelCents +
-        breakdown.speechSynthesisCents +
-        breakdown.whatsappCents +
-        breakdown.telephonyAndPlatformCents,
-    ).toBe(breakdown.totalCents);
+      breakdown.sttUsdMicros +
+        breakdown.llmUsdMicros +
+        breakdown.ttsUsdMicros +
+        breakdown.vapiUsdMicros +
+        breakdown.transportUsdMicros +
+        breakdown.chatUsdMicros +
+        breakdown.knowledgeBaseUsdMicros +
+        breakdown.unclassifiedUsdMicros,
+    ).toBe(breakdown.totalUsdMicros);
+  });
+
+  it("separa le chiamate storiche senza costo", () => {
+    const summary = aggregateMonitoringMetrics(
+      [
+        metric({
+          callsReceived: 2,
+          callsWithCostData: 1,
+        }),
+      ],
+      1,
+    );
+
+    expect(summary.callsWithCostData).toBe(1);
+    expect(summary.callsWithoutCostData).toBe(1);
+    expect(summary.costCoverageRate).toBe(0.5);
   });
 
   it("gestisce confronti normali e basi uguali a zero", () => {

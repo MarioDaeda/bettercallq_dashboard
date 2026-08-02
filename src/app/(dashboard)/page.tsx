@@ -23,7 +23,7 @@ import {
   resolveOverviewRange,
 } from "@/lib/overview/date-range";
 import {
-  formatCurrencyCents,
+  formatUsdMicros,
   formatInteger,
   formatLocalDate,
 } from "@/lib/overview/formatters";
@@ -115,11 +115,11 @@ export default async function OverviewPage({
       kind: "kpi",
       layout: "kpi",
       props: {
-        description: `${formatCurrencyCents(overview.estimatedCostCents)} nel periodo; proiezione su 30 giorni.`,
+        description: `${formatUsdMicros(overview.costTotalUsdMicros)} di costo Vapi disponibile nel periodo; proiezione su 30 giorni.`,
         icon: WalletCards,
-        label: "Costo mensile stimato",
+        label: "Costo mensile proiettato",
         tone: "info",
-        value: formatCurrencyCents(overview.estimatedMonthlyCostCents),
+        value: formatUsdMicros(overview.projectedMonthlyCostUsdMicros),
       },
     },
     {

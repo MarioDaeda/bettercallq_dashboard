@@ -1,13 +1,13 @@
 const integerFormatter = new Intl.NumberFormat("it-IT");
-const currencyFormatter = new Intl.NumberFormat("it-IT", {
-  currency: "EUR",
-  style: "currency",
+const usdFormatter = new Intl.NumberFormat("it-IT", {
+  maximumFractionDigits: 4,
+  minimumFractionDigits: 2,
 });
 
 export const formatInteger = (value: number) => integerFormatter.format(value);
 
-export const formatCurrencyCents = (value: number) =>
-  currencyFormatter.format(value / 100);
+export const formatUsdMicros = (value: number) =>
+  `$${usdFormatter.format(value / 1_000_000)}`;
 
 export const formatLocalDate = (value: string) =>
   new Intl.DateTimeFormat("it-IT", {
