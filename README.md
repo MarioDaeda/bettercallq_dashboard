@@ -40,10 +40,10 @@ Le fondamenta del prototipo sono complete:
 - formule economiche centralizzate e fixture giornaliere estese a 14 giorni;
 - loading, empty ed error state condivisi.
 
-La milestone M1 del frontend con fixture è completa. La Task 8A ha definito
-i ruoli `admin` e `salon_owner`, la matrice centralizzata dei permessi e la
-navigazione ridotta del cliente. Login, persistenza e autorizzazione server-side
-proseguono nelle Task 8B e 8C.
+La milestone M1 del frontend con fixture è completa. Le Task 8A e 8B hanno
+introdotto ruoli, navigazione per ruolo, Supabase Auth, sessioni cookie, login e
+logout. Database, membership persistenti, isolamento `salonId` e autorizzazione
+dei service proseguono nella Task 8C.
 
 ## Stack
 

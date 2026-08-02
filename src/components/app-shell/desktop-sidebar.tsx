@@ -1,14 +1,17 @@
 import { CircleHelp, FlaskConical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import type { AppRole } from "@/lib/auth/permissions";
 
 import { Brand } from "./brand";
 import { NavigationList } from "./navigation-list";
 
 export function DesktopSidebar({
   attentionCount,
+  role,
 }: {
   attentionCount: number;
+  role: AppRole;
 }) {
   return (
     <aside className="sticky top-0 hidden h-screen flex-col border-r border-sidebar-border bg-sidebar/90 px-4 py-5 text-sidebar-foreground backdrop-blur-xl lg:flex">
@@ -18,9 +21,9 @@ export function DesktopSidebar({
 
       <div className="mt-8">
         <p className="mb-2 px-3 text-[0.68rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
-          Il tuo salone
+          {role === "admin" ? "Console BetterCallQ" : "Il tuo salone"}
         </p>
-        <NavigationList attentionCount={attentionCount} />
+        <NavigationList attentionCount={attentionCount} role={role} />
       </div>
 
       <div className="mt-auto space-y-3">
@@ -42,7 +45,11 @@ export function DesktopSidebar({
 
         <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
           <CircleHelp aria-hidden="true" className="size-3.5" />
-          <span>BetterCallQ · Pilota</span>
+          <span>
+            {role === "admin"
+              ? "BetterCallQ · Amministratore"
+              : "BetterCallQ · Salone pilota"}
+          </span>
         </div>
       </div>
     </aside>
