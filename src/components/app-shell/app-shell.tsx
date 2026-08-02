@@ -1,6 +1,9 @@
 import type { AppIdentity } from "@/lib/auth/identity";
 import type { AppRole } from "@/lib/auth/permissions";
-import type { ChannelStatus, Salon } from "@/lib/domain";
+import type {
+  ChannelStatus,
+  Salon,
+} from "@/lib/domain";
 
 import { DesktopSidebar } from "./desktop-sidebar";
 import { TopBar } from "./top-bar";
@@ -11,6 +14,7 @@ interface AppShellProps {
   children: React.ReactNode;
   role: AppRole;
   salon: Salon;
+  showDemoNotice: boolean;
   user: AppIdentity;
 }
 
@@ -20,11 +24,16 @@ export function AppShell({
   children,
   role,
   salon,
+  showDemoNotice,
   user,
 }: AppShellProps) {
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)]">
-      <DesktopSidebar attentionCount={attentionCount} role={role} />
+      <DesktopSidebar
+        attentionCount={attentionCount}
+        role={role}
+        showDemoNotice={showDemoNotice}
+      />
 
       <div className="min-w-0">
         <TopBar
