@@ -8,6 +8,7 @@ export const permissions = [
   "interventions:manage",
   "calls:view",
   "transcripts:view",
+  "whatsapp:view",
   "whatsapp:manage",
   "salon-settings:view",
   "salon-settings:edit",
@@ -22,11 +23,8 @@ export type Permission = (typeof permissions)[number];
 
 const salonOwnerPermissions = [
   "overview:view",
-  "interventions:view",
-  "interventions:manage",
   "calls:view",
-  "salon-settings:view",
-  "salon-settings:edit",
+  "whatsapp:view",
 ] as const satisfies readonly Permission[];
 
 export const rolePermissions = {

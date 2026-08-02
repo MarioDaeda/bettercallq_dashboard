@@ -83,13 +83,6 @@ const salonOwnerNavigation = [
     permission: "overview:view",
   },
   {
-    label: "Da gestire",
-    shortLabel: "Da gestire",
-    href: "/da-gestire",
-    icon: "interventions",
-    permission: "interventions:view",
-  },
-  {
     label: "Chiamate",
     shortLabel: "Chiamate",
     href: "/chiamate",
@@ -97,11 +90,11 @@ const salonOwnerNavigation = [
     permission: "calls:view",
   },
   {
-    label: "Dati del salone",
-    shortLabel: "Dati salone",
-    href: "/dati-salone",
-    icon: "salon",
-    permission: "salon-settings:view",
+    label: "WhatsApp",
+    shortLabel: "WhatsApp",
+    href: "/whatsapp",
+    icon: "whatsapp",
+    permission: "whatsapp:view",
   },
 ] as const satisfies readonly NavigationItem[];
 
@@ -110,10 +103,6 @@ export const navigationByRole = {
   salon_owner: salonOwnerNavigation,
 } as const satisfies Record<AppRole, readonly NavigationItem[]>;
 
-/**
- * Compatibilità temporanea con la shell dimostrativa.
- * Task 8B sostituirà il ruolo predefinito con quello letto dalla sessione.
- */
 export const appNavigation = navigationByRole.admin;
 
 export function getNavigationForRole(

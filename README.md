@@ -111,3 +111,13 @@ src/
 
 Le specifiche del prodotto e dell’architettura si trovano nella cartella
 `docs/`.
+
+## Dashboard cliente
+
+Il ruolo `salon_owner` dispone di un'interfaccia essenziale con Panoramica,
+Chiamate e WhatsApp. La home confronta il consumo voce con 300 minuti mensili e
+separa il residuo dai minuti extra. Le liste cliente sono read-only, mostrano i
+numeri completi e non espongono trascrizioni o diagnostica.
+
+La specifica è documentata in `docs/CLIENT_DASHBOARD.md`.
+

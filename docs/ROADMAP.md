@@ -500,3 +500,26 @@ Uscita:
 - nessun ruolo letto da `user_metadata`;
 - nessuna chiave `service_role` nel frontend;
 - persistenza applicativa e RLS rinviate alla Task 8C.
+
+### Task 8B.1 — Dashboard cliente essenziale
+
+**Stato:** completata
+
+Implementare:
+
+- navigazione cliente ridotta a Panoramica, Chiamate e WhatsApp;
+- permesso separato `whatsapp:view`;
+- protezione server-side delle route esclusivamente amministrative;
+- piano voce da 300 minuti per mese solare;
+- barra dei minuti inclusi, residuo e indicatore extra;
+- panoramica cliente con tre soli pannelli;
+- lista chiamate read-only senza trascrizioni;
+- monitoraggio WhatsApp read-only;
+- numeri telefonici completi nelle due liste;
+- test dei calcoli e dei contratti RBAC.
+
+Uscita:
+
+- la console admin rimane invariata;
+- il cliente non può aprire le route tecniche neppure tramite URL diretto;
+- i dati restano fixture fino alla Task 8C.

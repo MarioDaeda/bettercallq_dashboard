@@ -6,6 +6,7 @@ import {
   WalletCards,
 } from "lucide-react";
 
+import { ClientOverview } from "@/components/client-dashboard/client-overview";
 import {
   DashboardWidgetRenderer,
   type DashboardWidget,
@@ -13,6 +14,12 @@ import {
 import { InterventionAttentionValue } from "@/components/interventions/intervention-session-context";
 import { PeriodFilter } from "@/components/overview/period-filter";
 import { PageHeader } from "@/components/shared/page-header";
+import { requireAppSession } from "@/lib/auth/session";
+import {
+  calculateVoicePlanUsage,
+  isDateTimeInRange,
+  resolveCalendarMonthRange,
+} from "@/lib/client-dashboard/voice-usage";
 import {
   overviewPeriodLabels,
   parseOverviewPeriod,
@@ -41,17 +48,44 @@ interface OverviewPageProps {
 export default async function OverviewPage({
   searchParams,
 }: OverviewPageProps) {
+  const session = await requireAppSession();
+  const salonId = session.salonId ?? PILOT_SALON_ID;
+
+  if (session.role === "salon_owner") {
+    const [salon, reportingDate] = await Promise.all([
+      dashboardService.getSalon(salonId),
+      dashboardService.getReportingDate(salonId),
+    ]);
+    const range = resolveCalendarMonthRange(reportingDate);
+    const [overview, calls, conversations] = await Promise.all([
+      dashboardService.getOverview(salonId, range),
+      dashboardService.listCalls(salonId, range),
+      dashboardService.listConversations(salonId),
+    ]);
+    const monthlyConversations = conversations.filter((conversation) =>
+      isDateTimeInRange(conversation.createdAt, range),
+    );
+
+    return (
+      <ClientOverview
+        conversationCount={monthlyConversations.length}
+        overview={overview}
+        range={range}
+        reportingDate={reportingDate}
+        salon={salon}
+        usage={calculateVoicePlanUsage(calls)}
+      />
+    );
+  }
+
   const query = await searchParams;
   const period = parseOverviewPeriod(query.period);
   const [salon, reportingDate] = await Promise.all([
-    dashboardService.getSalon(PILOT_SALON_ID),
-    dashboardService.getReportingDate(PILOT_SALON_ID),
+    dashboardService.getSalon(salonId),
+    dashboardService.getReportingDate(salonId),
   ]);
   const range = resolveOverviewRange(reportingDate, period);
-  const overview = await dashboardService.getOverview(
-    PILOT_SALON_ID,
-    range,
-  );
+  const overview = await dashboardService.getOverview(salonId, range);
   const periodLabel = overviewPeriodLabels[period];
 
   const widgets: DashboardWidget[] = [
