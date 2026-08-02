@@ -161,8 +161,8 @@ export function MonitoringPageContent({
     <div className="space-y-7">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <PageHeader
-          badge="Monitoraggio · dati dimostrativi"
-          description="Volumi, qualità e costi spiegati con unità visibili, formule centralizzate e confronto con il periodo precedente."
+          badge="Monitoraggio · dati Supabase"
+          description="Volumi e qualità letti da Supabase; costi stimati con formule centralizzate e confronto con il periodo precedente."
           title="Numeri utili, senza una console tecnica."
         />
         <div className="shrink-0">
@@ -349,7 +349,7 @@ export function MonitoringPageContent({
                 <div>
                   <p className="text-sm font-semibold">Nessun evento recente</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Le fixture del periodo non contengono errori da mostrare.
+                    Nel periodo selezionato non risultano errori operativi.
                   </p>
                 </div>
               </div>
@@ -405,11 +405,11 @@ export function MonitoringPageContent({
             />
             <FormulaRow
               icon={MessageCircle}
-              text={`WhatsApp: ${decimalFormatter.format(demoCostRates.whatsappPerMessageCents)} cent/messaggio nella fixture.`}
+              text={`WhatsApp: ${decimalFormatter.format(demoCostRates.whatsappPerMessageCents)} cent/messaggio stimato; il conteggio resta a zero finché i messaggi non sono persistiti.`}
             />
             <FormulaRow
               icon={Coins}
-              text="Telefonia e piattaforma assorbono il residuo tra la stima giornaliera fixture e le componenti calcolate."
+              text="Telefonia e costo piattaforma non sono ancora inclusi nei dati reali; il totale mostra ASR, modello linguistico e sintesi vocale."
             />
             <div className="rounded-2xl border bg-muted/25 p-3">
               Periodo: <strong className="text-foreground">{currentLabel}</strong> ·
