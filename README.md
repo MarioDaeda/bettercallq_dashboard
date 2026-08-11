@@ -1,8 +1,9 @@
 # BetterCallQ Dashboard
 
 Dashboard privata per configurare e monitorare la receptionist IA BetterCallQ.
-Treatwell rimane il sistema degli appuntamenti: questa applicazione non crea un
-calendario parallelo.
+Treatwell rimane il gestionale definitivo. Nel branch pilot, BetterCallQ prenota
+soltanto finestre affidate dal salone su un Google Calendar dedicato e mostra le
+operazioni da riportare manualmente su Treatwell.
 
 ## Stato del progetto
 
@@ -39,6 +40,9 @@ Le fondamenta del prototipo sono complete:
   diagnostica, costo stimato e confronto tra periodi equivalenti;
 - formule economiche centralizzate e fixture giornaliere estese a 14 giorni;
 - loading, empty ed error state condivisi.
+- coda persistente delle prenotazioni, modifiche e cancellazioni da riportare
+  manualmente su Treatwell;
+- claim PostgreSQL atomico contro il double booking degli slot riservati.
 
 La milestone M1 del frontend con fixture è completa. Le Task 8A e 8B hanno
 introdotto ruoli, navigazione per ruolo, Supabase Auth, sessioni cookie, login e
