@@ -26,6 +26,7 @@ import { SalonProfileSettings } from "@/components/settings/salon-profile-settin
 import { ScheduleSettings } from "@/components/settings/schedule-settings";
 import { ServicesSettings } from "@/components/settings/services-settings";
 import { SettingsSectionNav } from "@/components/settings/settings-section-nav";
+import { VapiTestCallCard } from "@/components/settings/vapi-test-call-card";
 import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { AppRole } from "@/lib/auth/permissions";
 import {
   updateReceptionistSettingsInputSchema,
   type ReceptionistSettings,
@@ -64,7 +66,13 @@ interface Feedback {
   title: string;
 }
 
-export function AiSettingsPageClient() {
+interface AiSettingsPageClientProps {
+  platformRole: AppRole;
+}
+
+export function AiSettingsPageClient({
+  platformRole,
+}: AiSettingsPageClientProps) {
   const [salon, setSalon] = useState<Salon | null>(null);
   const [metadata, setMetadata] =
     useState<ReceptionistSettings | null>(null);
@@ -408,6 +416,8 @@ export function AiSettingsPageClient() {
           </div>
         </div>
       </div>
+
+      {platformRole === "admin" ? <VapiTestCallCard /> : null}
 
       {validationIssues.length > 0 ? (
         <ValidationSummary
