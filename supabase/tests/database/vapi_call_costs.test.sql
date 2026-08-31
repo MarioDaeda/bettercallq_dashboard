@@ -3,6 +3,8 @@ begin;
 create extension if not exists pgtap
 with schema extensions;
 
+set local search_path = extensions, public, pg_catalog;
+
 select plan(17);
 
 select has_column(

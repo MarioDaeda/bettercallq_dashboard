@@ -128,6 +128,28 @@ export const persistedConversationRowSchema = z.object({
   updated_at: dateTimeSchema,
 });
 
+export const treatwellBookingRowSchema = z.object({
+  id: uuidSchema,
+  salon_id: uuidSchema,
+  customer_name: z.string().trim().min(1),
+  customer_phone: phoneSchema.nullable(),
+  service_code: z.string().min(1),
+  service_name: z.string().trim().min(1),
+  duration_minutes: z.number().int().positive(),
+  starts_at: dateTimeSchema,
+  ends_at: dateTimeSchema,
+  status: z.enum(["confirmed", "cancelled"]),
+  treatwell_status: z.enum([
+    "to_sync",
+    "update_required",
+    "cancellation_required",
+  ]),
+  google_calendar_event_id: z.string().nullable(),
+  channel: z.enum(["vapi", "api", "dashboard"]),
+  created_at: dateTimeSchema,
+  updated_at: dateTimeSchema,
+});
+
 export type ProfileRow = z.infer<typeof profileRowSchema>;
 export type SalonRow = z.infer<typeof salonRowSchema>;
 export type SalonMembershipRow = z.infer<
@@ -140,4 +162,7 @@ export type UsagePeriodRow = z.infer<typeof usagePeriodRowSchema>;
 export type PersistedCallRow = z.infer<typeof persistedCallRowSchema>;
 export type PersistedConversationRow = z.infer<
   typeof persistedConversationRowSchema
+>;
+export type TreatwellBookingRow = z.infer<
+  typeof treatwellBookingRowSchema
 >;
